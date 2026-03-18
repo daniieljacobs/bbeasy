@@ -18,7 +18,7 @@ export default function OnboardingPage() {
             price: "€0",
             features: ["3 high-quality mocks", "Core assessment"],
             button: "Choose Basic",
-            href: "/portal/tests",
+            href: "/portal/dashboard",
             featured: false
         },
         {
@@ -40,7 +40,7 @@ export default function OnboardingPage() {
     ];
 
     return (
-        <div className="min-h-screen flex items-center justify-center font-mono selection:bg-blue-900 selection:text-white">
+        <div className="h-screen flex items-center justify-center font-mono selection:bg-blue-900 selection:text-white overflow-hidden">
             <AnimatePresence mode="wait">
                 {stage === 'welcome' ? (
                     <motion.div
@@ -64,22 +64,26 @@ export default function OnboardingPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 1.5 }}
-                        className="max-w-6xl w-full mx-auto px-8 py-12"
+                        className="max-w-6xl w-full mx-auto px-8"
                     >
-                        <div className="text-center mb-24">
+                        <div className="text-center mb-16">
                             <h2 className="text-xl font-bold text-slate-600 tracking-tight">
                                 Select your membership
                             </h2>
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-10">
+                        <div className="grid md:grid-cols-3 gap-10 items-stretch">
                             {tiers.map((tier, idx) => (
                                 <motion.div
                                     key={tier.name}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.3 + (idx * 0.15), duration: 1 }}
-                                    className={`relative p-10 rounded-[2.5rem] border transition-all duration-700
+                                    transition={{
+                                        delay: 0.3 + (idx * 0.15),
+                                        duration: 0.8,
+                                        ease: [0.16, 1, 0.3, 1]
+                                    }}
+                                    className={`relative p-10 rounded-[2.5rem] border flex flex-col
                                         ${tier.featured
                                             ? 'border-blue-900/25 bg-[#F0F4FF] backdrop-blur-2xl shadow-2xl shadow-blue-900/10'
                                             : 'border-white/60 bg-white/40 backdrop-blur-2xl shadow-xl shadow-black/5'
@@ -94,10 +98,10 @@ export default function OnboardingPage() {
                                         </div>
                                     </div>
 
-                                    <ul className="space-y-5 mb-14 flex-grow">
+                                    <ul className="space-y-5 flex-grow mb-8">
                                         {tier.features.map(f => (
                                             <li key={f} className="text-xs text-slate-500 flex items-center gap-3">
-                                                <div className={`w-1 h-1 rounded-full ${tier.featured ? 'bg-blue-900/30' : 'bg-slate-300'}`} />
+                                                <div className={`w-1 h-1 rounded-full shrink-0 ${tier.featured ? 'bg-blue-900/30' : 'bg-slate-300'}`} />
                                                 {f}
                                             </li>
                                         ))}
@@ -117,7 +121,7 @@ export default function OnboardingPage() {
                             ))}
                         </div>
 
-                        <footer className="mt-28 text-center">
+                        <footer className="mt-16 text-center">
                             <p className="text-[9px] text-slate-400 uppercase tracking-[0.5em] opacity-40">
                                 Secure Checkout &middot; Instant Activation
                             </p>
