@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <nav className="p-6 flex justify-between items-center border-b border-slate-200 bg-white/50 backdrop-blur-sm">
             <h1 className="font-bold text-xl tracking-tight">BB<span className="text-blue-600">EASY</span></h1>
             <div className="space-x-4 text-sm font-medium">
-              <a href="/portal/tests" className="hover:text-blue-600 transition">My Tests</a>
+              <a href="/portal/dashboard" className="hover:text-blue-600 transition">My Tests</a>
               <a href="/admin/dashboard" className="px-3 py-2 bg-black text-white rounded-lg hover:bg-slate-800 transition">Admin Mode</a>
             </div>
           </nav>

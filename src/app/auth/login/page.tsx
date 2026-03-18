@@ -22,9 +22,23 @@ export default function LoginPage() {
 
         if (error) {
             alert(error.message);
-        } else {
-            router.push('/portal/tests');
+            setLoading(false);
+            return;
         }
+
+        // Check role and redirect accordingly
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+        if (profile?.role === 'admin') {
+            router.push('/admin/dashboard');
+        } else {
+            router.push('/portal/dashboard');
+        }
+
         setLoading(false);
     };
 
@@ -69,7 +83,8 @@ export default function LoginPage() {
             </button>
 
             <p className="text-center text-sm text-slate-500">
-                Don't have an account? <Link href="/auth/register" className="text-blue-600 font-bold hover:underline">Register</Link>
+                Don't have an account?{' '}
+                <Link href="/auth/register" className="text-blue-600 font-bold hover:underline">Register</Link>
             </p>
         </form>
     );

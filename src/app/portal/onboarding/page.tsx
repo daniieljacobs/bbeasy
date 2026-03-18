@@ -81,7 +81,7 @@ export default function OnboardingPage() {
                                     transition={{ delay: 0.3 + (idx * 0.15), duration: 1 }}
                                     className={`relative p-10 rounded-[2.5rem] border transition-all duration-700
                                         ${tier.featured
-                                            ? 'border-blue-900/25 bg-blue-50/60 backdrop-blur-2xl shadow-2xl shadow-blue-900/10'
+                                            ? 'border-blue-900/25 bg-[#F0F4FF] backdrop-blur-2xl shadow-2xl shadow-blue-900/10'
                                             : 'border-white/60 bg-white/40 backdrop-blur-2xl shadow-xl shadow-black/5'
                                         }`}
                                 >
@@ -107,8 +107,8 @@ export default function OnboardingPage() {
                                         href={tier.href}
                                         className={`block w-full py-4 text-[11px] font-bold text-center rounded-2xl transition-all tracking-wide
                                             ${tier.featured
-                                                ? 'bg-blue-900 text-white hover:bg-slate-900'
-                                                : 'bg-slate-900/[0.05] text-slate-600 hover:bg-slate-900 hover:text-white'
+                                                ? 'bg-blue-900 text-white hover:bg-slate-900 duration-300'
+                                                : 'bg-slate-900/[0.05] text-slate-600 hover:bg-slate-900 duration-300 hover:text-white'
                                             }`}
                                     >
                                         {tier.button}

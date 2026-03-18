@@ -1,104 +1,155 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronRight, ChevronLeft, Send, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 
 export default function TestRunner({ questions }: { questions: any[] }) {
     const [currentIdx, setCurrentIdx] = useState(0);
-    const [answers, setAnswers] = useState<Record<number, Record<number, string>>>({});
+    const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const router = useRouter();
-    const params = useParams(); // To get the test ID from the URL ([id])
+    const params = useParams();
+    const testId = params.id as string;
 
     const currentQ = questions[currentIdx];
 
-    const handleSelect = (sIdx: number, val: string) => {
+    const handleSelect = (qId: string, sId: string, val: string) => {
         setAnswers({
             ...answers,
-            [currentIdx]: { ...(answers[currentIdx] || {}), [sIdx]: val }
+            [qId]: { ...(answers[qId] || {}), [sId]: val }
         });
     };
 
     const isQuestionComplete = (qIdx: number) => {
-        const qAnswers = answers[qIdx] || {};
-        return Object.keys(qAnswers).length === questions[qIdx].statements.length;
+        const q = questions[qIdx];
+        const qAnswers = answers[q.id] || {};
+        return Object.keys(qAnswers).length === q.statements.length;
     };
 
-    // Calculate final score based on T/F correctness
-    const calculateFinalScore = () => {
-        let totalPoints = 0;
-        let earnedPoints = 0;
-
-        questions.forEach((q, qIdx) => {
-            q.statements.forEach((s: any, sIdx: number) => {
-                totalPoints++;
-                const userAns = answers[qIdx]?.[sIdx];
-                const correctStr = s.isCorrect ? 'True' : 'False';
-                if (userAns === correctStr) earnedPoints++;
-            });
-        });
-
-        return Math.round((earnedPoints / totalPoints) * 100);
-    };
+    const isTestComplete = questions.every((_, idx) => isQuestionComplete(idx));
 
     const handleSubmit = async () => {
-        setIsSubmitting(true);
-
-        // 1. Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            alert("You must be logged in to save results.");
-            setIsSubmitting(false);
+        if (!testId) {
+            alert("Error: Test ID not found in URL.");
             return;
         }
 
-        const finalScore = calculateFinalScore();
+        setIsSubmitting(true);
 
-        // 2. Insert into Supabase
-        const { data, error } = await supabase
-            .from('test_results')
-            .insert({
-                user_id: user.id,
-                test_id: params.id, // Takes 'test-1' etc from URL
-                score: finalScore,
-                answers: answers // Stores the JSON of their choices
-            })
-            .select()
-            .single();
+        try {
+            const { data: authData, error: authError } = await supabase.auth.getUser();
+            const user = authData?.user;
 
-        if (error) {
-            console.error(error);
-            alert("Error saving results: " + error.message);
+            if (authError || !user) {
+                alert("Your session has expired. Please log in to save results.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            let totalStatements = 0;
+            let correctStatements = 0;
+            const answerRecords: any[] = [];
+
+            questions.forEach((q) => {
+                q.statements.forEach((s: any) => {
+                    totalStatements++;
+
+                    const userChoiceString = answers[q.id]?.[s.id];
+                    const userChoiceBool = userChoiceString === 'True';
+                    const isCorrect = userChoiceBool === s.isCorrect;
+
+                    if (isCorrect) correctStatements++;
+
+                    answerRecords.push({
+                        question_item_id: s.id,
+                        user_choice: userChoiceBool,
+                        is_correct: isCorrect
+                    });
+                });
+            });
+
+            const finalScore = (correctStatements / totalStatements) * 100;
+            const pointsAwarded = finalScore >= 70 ? Math.round(finalScore * 10) : 0;
+
+            const { data: resultData, error: resultErr } = await supabase
+                .from('test_results')
+                .insert({
+                    user_id: user.id,
+                    test_id: testId,
+                    score: Math.round(finalScore),
+                    correct_count: correctStatements,
+                    total_count: totalStatements,
+                    points_awarded: pointsAwarded
+                })
+                .select()
+                .single();
+
+            if (resultErr) {
+                console.error("Database Error:", resultErr.message);
+                alert(`Could not save result: ${resultErr.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            const finalAnswers = answerRecords.map(record => ({
+                ...record,
+                result_id: resultData.id
+            }));
+
+            const { error: answerErr } = await supabase
+                .from('user_answers')
+                .insert(finalAnswers);
+
+            if (answerErr) {
+                console.error("Answer Sync Error:", answerErr.message);
+            }
+
+            if (pointsAwarded > 0) {
+                await supabase.rpc('increment_points', {
+                    user_id: user.id,
+                    points: pointsAwarded
+                });
+            }
+
+            router.push(`/portal/results/${resultData.id}`);
+
+        } catch (err) {
+            console.error("Unexpected Error:", err);
+            alert("An unexpected error occurred. Please try again.");
+        } finally {
             setIsSubmitting(false);
-        } else {
-            // 3. Send them to their specific result review page
-            router.push(`/portal/results/${data.id}`);
         }
     };
 
     return (
-        <div className="space-y-8">
-            <div className="bg-white/90 backdrop-blur-md p-8 rounded-3xl border border-slate-200 shadow-xl min-h-[400px]">
-                <div className="mb-6">
-                    <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">{currentQ.topic}</span>
-                    <h2 className="text-xl font-bold mt-2">{currentQ.questionText}</h2>
+        <div className="space-y-8 font-mono">
+            <div className="bg-white/10 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/20 shadow-2xl min-h-[450px] flex flex-col">
+                <div className="mb-8">
+                    <span className="text-blue-900 font-bold text-[10px] uppercase tracking-[0.3em] opacity-60">
+                        {currentQ.topic || "Section Assessment"}
+                    </span>
+                    <h2 className="text-xl font-bold mt-2 text-slate-800 tracking-tight leading-tight">
+                        {currentQ.questionText}
+                    </h2>
                 </div>
 
-                <div className="space-y-4">
-                    {currentQ.statements.map((s: any, sIdx: number) => (
-                        <div key={s.id} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                            <p className="text-slate-700 pr-4 text-sm md:text-base">{s.text}</p>
+                <div className="space-y-3 flex-grow">
+                    {currentQ.statements.map((s: any) => (
+                        <div key={s.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/10 group transition-all hover:bg-white/10">
+                            <p className="text-slate-600 pr-4 text-sm leading-relaxed mb-4 md:mb-0 italic">
+                                {s.text}
+                            </p>
                             <div className="flex gap-2 shrink-0">
                                 {['True', 'False'].map((val) => (
                                     <button
                                         key={val}
-                                        onClick={() => handleSelect(sIdx, val)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${answers[currentIdx]?.[sIdx] === val
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-600'
+                                        onClick={() => handleSelect(currentQ.id, s.id, val)}
+                                        className={`px-6 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all ${answers[currentQ.id]?.[s.id] === val
+                                            ? 'bg-blue-900 text-white shadow-lg'
+                                            : 'bg-white/20 border border-white/20 text-slate-400 hover:border-slate-400 hover:text-slate-600'
                                             }`}
                                     >
                                         {val}
@@ -109,45 +160,46 @@ export default function TestRunner({ questions }: { questions: any[] }) {
                     ))}
                 </div>
 
-                <div className="flex justify-between mt-10 pt-6 border-t border-slate-100">
+                <div className="flex justify-between mt-12 pt-8 border-t border-slate-100/50">
                     <button
                         disabled={currentIdx === 0}
                         onClick={() => setCurrentIdx(prev => prev - 1)}
-                        className="flex items-center gap-2 text-slate-400 disabled:opacity-0 transition hover:text-slate-600"
+                        className="flex items-center gap-2 text-xs font-bold text-slate-400 disabled:opacity-0 transition hover:text-slate-900 uppercase tracking-widest"
                     >
-                        <ChevronLeft size={20} /> Previous
+                        <ChevronLeft size={16} /> prev
                     </button>
 
                     {currentIdx === questions.length - 1 ? (
                         <button
                             onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-xl font-bold shadow-lg shadow-green-100 transition hover:bg-green-700 disabled:opacity-50"
+                            disabled={isSubmitting || !isTestComplete}
+                            className="px-10 py-4 bg-blue-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-900 transition-all disabled:opacity-20 shadow-xl shadow-blue-900/10 flex items-center gap-2"
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <>Complete Exam <Send size={18} /></>}
+                            {isSubmitting ? <><Loader2 className="animate-spin" size={14} /> Processing</> : "Finalize_Test"}
                         </button>
                     ) : (
                         <button
                             onClick={() => setCurrentIdx(prev => prev + 1)}
-                            className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-xl font-bold transition hover:bg-slate-700"
+                            className="flex items-center gap-2 px-10 py-4 bg-slate-900 text-white text-[10px] font-bold rounded-2xl uppercase tracking-[0.2em] transition hover:bg-blue-900 shadow-lg shadow-black/5"
                         >
-                            Next <ChevronRight size={20} />
+                            next <ChevronRight size={16} />
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="flex justify-center flex-wrap gap-3">
+            <div className="flex justify-center flex-wrap gap-4">
                 {questions.map((_, idx) => (
                     <button
                         key={idx}
                         onClick={() => setCurrentIdx(idx)}
-                        className={`w-10 h-10 rounded-full font-bold text-sm flex items-center justify-center transition-all ${currentIdx === idx ? 'ring-4 ring-blue-100 border-2 border-blue-600 text-blue-600 bg-white' :
-                                isQuestionComplete(idx) ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'
+                        className={`w-3 h-3 rounded-full transition-all duration-500 ${currentIdx === idx
+                            ? 'bg-blue-900 scale-150 shadow-lg shadow-blue-900/20'
+                            : isQuestionComplete(idx)
+                                ? 'bg-blue-900/40'
+                                : 'bg-slate-200'
                             }`}
-                    >
-                        {idx + 1}
-                    </button>
+                    />
                 ))}
             </div>
         </div>

@@ -9,6 +9,7 @@ export default function RegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
@@ -16,22 +17,46 @@ export default function RegisterPage() {
         e.preventDefault();
         setLoading(true);
 
+        // Check username is unique before proceeding
+        const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', username)
+            .single();
+
+        if (existingUser) {
+            alert('Username already taken, please choose another.');
+            setLoading(false);
+            return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                data: {
-                    full_name: fullName,
-                },
-            },
+                data: { full_name: fullName }
+            }
         });
 
         if (error) {
             alert(error.message);
-        } else {
-            alert('Registration successful! Check your email for a confirmation link.');
-            router.push('/portal/onboarding');
+            setLoading(false);
+            return;
         }
+
+        // Save full_name and username to profiles
+        if (data.user) {
+            await supabase
+                .from('profiles')
+                .upsert({
+                    id: data.user.id,
+                    full_name: fullName,
+                    username,
+                    role: 'free'
+                });
+        }
+
+        router.push('/portal/dashboard');
         setLoading(false);
     };
 
@@ -53,6 +78,19 @@ export default function RegisterPage() {
                         placeholder="Alex Mustermann"
                         className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                     />
+                </div>
+                <div>
+                    <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Username</label>
+                    <input
+                        required
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        placeholder="alex_m"
+                        maxLength={20}
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1 ml-1">Letters, numbers and underscores only</p>
                 </div>
                 <div>
                     <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Email Address</label>
@@ -87,7 +125,8 @@ export default function RegisterPage() {
             </button>
 
             <p className="text-center text-sm text-slate-500">
-                Already have an account? <Link href="/auth/login" className="text-blue-600 font-bold hover:underline">Log in</Link>
+                Already have an account?{' '}
+                <Link href="/auth/login" className="text-blue-600 font-bold hover:underline">Log in</Link>
             </p>
         </form>
     );
