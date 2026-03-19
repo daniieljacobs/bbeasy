@@ -105,7 +105,8 @@ export default function ProfilePage() {
 
         if (results && results.length > 0) {
             const avg = Math.round(results.reduce((a, r) => a + r.score, 0) / results.length);
-            setStats({ totalPoints: profileData?.total_points || 0, testsCompleted: results.length, avgScore: avg });
+            const totalPoints = results.reduce((a, r) => a + (r.points_awarded || 0), 0);
+            setStats({ totalPoints, testsCompleted: results.length, avgScore: avg });
             setTestHistory(results);
 
             const { data: allResults } = await supabase.from('test_results').select('user_id, score').eq('is_practice', false);
@@ -210,7 +211,7 @@ export default function ProfilePage() {
                 {[
                     { label: 'Prep Points', value: stats.totalPoints, icon: <Zap size={15} /> },
                     { label: 'Tests Done', value: stats.testsCompleted, icon: <CheckCircle size={15} /> },
-                    { label: 'Avg Score', value: `${stats.avgScore}%`, icon: <Target size={15} /> },
+                    { label: 'Avg Score', value: isPro ? `${stats.avgScore}%` : <Lock size={14} className="text-slate-300" />, icon: <Target size={15} /> },
                     { label: 'Percentile', value: isPro ? (percentile !== null ? `Top ${100 - percentile}%` : '—') : <Lock size={14} className="text-slate-300" />, icon: <Trophy size={15} /> },
                 ].map((s, i) => (
                     <motion.div

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -15,10 +16,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 </div>
             ) : (
                 <div className="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-[2.5rem] border border-slate-100 shadow-xl p-10">
-                    <div className="text-center mb-8">
-                        <h1 className="font-black text-2xl tracking-tight">
+                    <div className="mb-10 text-center">
+                        <Link href="/" className="font-black text-2xl tracking-tight hover:opacity-70 transition-opacity">
                             BB<span className="text-brand">EASY</span>
-                        </h1>
+                        </Link>
                     </div>
                     {children}
                 </div>

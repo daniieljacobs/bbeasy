@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
     const [email, setEmail] = useState('');
@@ -17,7 +18,6 @@ export default function RegisterPage() {
         e.preventDefault();
         setLoading(true);
 
-        // Check username is unique before proceeding
         const { data: existingUser } = await supabase
             .from('profiles')
             .select('id')
@@ -33,9 +33,7 @@ export default function RegisterPage() {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: {
-                data: { full_name: fullName }
-            }
+            options: { data: { full_name: fullName } }
         });
 
         if (error) {
@@ -44,43 +42,53 @@ export default function RegisterPage() {
             return;
         }
 
-        // Save full_name and username to profiles
         if (data.user) {
-            await supabase
-                .from('profiles')
-                .upsert({
-                    id: data.user.id,
-                    full_name: fullName,
-                    username,
-                    role: 'free'
-                });
+            await supabase.from('profiles').upsert({
+                id: data.user.id,
+                full_name: fullName,
+                username,
+                role: 'free'
+            });
         }
 
-        router.push('/portal/dashboard');
+        const firstName = fullName.split(' ')[0] || '';
+        router.push(`/portal/dashboard?onboarding=true&name=${firstName}`);
         setLoading(false);
     };
 
+    const inputClass = "w-full px-4 py-3 bg-white border border-slate-200 text-sm font-mono outline-none focus:border-brand transition-colors placeholder:text-slate-300";
+    const labelClass = "text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1.5 block";
+
     return (
-        <form onSubmit={handleRegister} className="space-y-6">
-            <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-slate-900">Join the portal</h2>
-                <p className="text-slate-500 mt-2">Start your BBE preparation today.</p>
+        <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-sm font-mono"
+        >
+            {/* Header */}
+            <div className="mb-8 border-b border-slate-200 pb-8">
+                <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400 mb-2">Create account</p>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+                    Join the portal.
+                </h1>
             </div>
 
-            <div className="space-y-4">
+            {/* Form */}
+            <form onSubmit={handleRegister} className="space-y-4">
                 <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Full Name</label>
+                    <label className={labelClass}>Full Name</label>
                     <input
                         required
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Alex Mustermann"
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-tint0 outline-none transition"
+                        className={inputClass}
                     />
                 </div>
                 <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Username</label>
+                    <label className={labelClass}>Username</label>
                     <input
                         required
                         type="text"
@@ -88,46 +96,50 @@ export default function RegisterPage() {
                         onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                         placeholder="alex_m"
                         maxLength={20}
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-tint0 outline-none transition"
+                        className={inputClass}
                     />
-                    <p className="text-[10px] text-slate-400 mt-1 ml-1">Letters, numbers and underscores only</p>
+                    <p className="text-[8px] uppercase tracking-[0.2em] text-slate-300 mt-1.5">
+                        Letters, numbers and underscores only
+                    </p>
                 </div>
                 <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Email Address</label>
+                    <label className={labelClass}>Email</label>
                     <input
                         required
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="alex@wu.ac.at"
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-tint0 outline-none transition"
+                        className={inputClass}
                     />
                 </div>
                 <div>
-                    <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Password</label>
+                    <label className={labelClass}>Password</label>
                     <input
                         required
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-tint0 outline-none transition"
+                        className={inputClass}
                     />
                 </div>
-            </div>
 
-            <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:bg-brand-hover shadow-lg shadow-blue-100 transition duration-300 disabled:opacity-50"
-            >
-                {loading ? 'Creating account...' : 'Create My Account'}
-            </button>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors disabled:opacity-40 mt-2"
+                >
+                    {loading ? 'Creating account...' : 'Create Account'}
+                </button>
+            </form>
 
-            <p className="text-center text-sm text-slate-500">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="text-brand font-bold hover:underline">Log in</Link>
+            <p className="text-center text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-6">
+                Already registered?{' '}
+                <Link href="/auth/login" className="text-brand font-black hover:text-slate-900 transition-colors">
+                    Sign in
+                </Link>
             </p>
-        </form>
+        </motion.div>
     );
 }

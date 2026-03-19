@@ -110,7 +110,7 @@ export default function LandingPage() {
                 </div>
                 <div className="w-px h-10 bg-slate-200" />
                 <div>
-                  <p className="text-3xl font-black text-slate-900">€59</p>
+                  <p className="text-3xl font-black text-slate-900">€19</p>
                   <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400">vs €300–500 elsewhere</p>
                 </div>
                 <div className="w-px h-10 bg-slate-200" />
@@ -147,17 +147,20 @@ export default function LandingPage() {
 
         {/* ── PRICING ── */}
         <div className="py-20 border-b border-slate-200">
-          <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-10">
+          <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-2">
             Pricing
           </motion.p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-200">
+          <motion.p {...v(0.08)} className="text-slate-400 text-sm mb-10">
+            Start monthly, upgrade to lifetime anytime. Cancel whenever you want.
+          </motion.p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-200 items-stretch">
 
             {/* Free */}
-            <motion.div {...v(0.1)} className="bg-slate-50 px-8 py-10">
+            <motion.div {...v(0.1)} className="bg-slate-50 px-8 py-10 flex flex-col">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Free</p>
               <p className="text-5xl font-black text-slate-900 mb-1">€0</p>
               <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mb-8">Always free</p>
-              <ul className="space-y-3 mb-10">
+              <ul className="space-y-3 flex-1">
                 {['3 mock exams', 'Starter assessment', 'Prep points & leaderboard'].map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-slate-600">
                     <span className="w-1 h-1 bg-slate-400 rounded-full shrink-0" />
@@ -165,6 +168,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
+              <div className="h-10" />
               <Link
                 href="/auth/register"
                 className="flex items-center justify-center gap-2 py-3 border border-slate-300 text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 hover:border-slate-600 hover:text-slate-900 transition-colors"
@@ -174,11 +178,14 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Pro */}
-            <motion.div {...v(0.15)} className="bg-brand px-8 py-10">
+            <motion.div {...v(0.15)} className="bg-brand px-8 py-10 flex flex-col">
               <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60 mb-4">Pro</p>
-              <p className="text-5xl font-black text-white mb-1">€59</p>
-              <p className="text-[9px] uppercase tracking-[0.2em] text-white/60 mb-8">One-time · lifetime access</p>
-              <ul className="space-y-3 mb-10">
+              <div className="mb-8">
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/60 mb-1">Starting at</p>
+                <p className="text-5xl font-black text-white mb-1">€19</p>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">/ month · or €59 lifetime</p>
+              </div>
+              <ul className="space-y-3 flex-1">
                 {proFeatures.map(f => (
                   <li key={f} className="flex items-center gap-2 text-xs text-white/80">
                     <span className="w-1 h-1 bg-white/60 rounded-full shrink-0" />
@@ -186,6 +193,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
+              <div className="h-10" />
               <Link
                 href="/auth/register"
                 className="flex items-center justify-center gap-2 py-3 bg-white text-brand text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 hover:text-white transition-colors"

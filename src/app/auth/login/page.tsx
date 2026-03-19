@@ -5,26 +5,20 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-
-    // Animation states
     const [loginSuccess, setLoginSuccess] = useState(false);
-    // We no longer need the userName state for the UI here, as it's passed to the URL!
-
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
             alert(error.message);
@@ -32,20 +26,15 @@ export default function LoginPage() {
             return;
         }
 
-        // Fetch role and full_name for the routing handoff
         const { data: profile } = await supabase
             .from('profiles')
             .select('role, full_name')
             .eq('id', data.user.id)
             .single();
 
-        // Extract first name
         const firstName = profile?.full_name?.split(' ')[0] || '';
-
-        // 1. Trigger the fast fade to solid color
         setLoginSuccess(true);
 
-        // 2. Fire the router almost immediately (400ms) with the welcome parameter
         setTimeout(() => {
             if (profile?.role === 'admin') {
                 router.push(`/admin/dashboard?welcome=${firstName}`);
@@ -55,72 +44,85 @@ export default function LoginPage() {
         }, 400);
     };
 
+    const inputClass = "w-full px-4 py-3 bg-white border border-slate-200 text-sm font-mono outline-none focus:border-brand transition-colors placeholder:text-slate-300";
+    const labelClass = "text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1.5 block";
+
     return (
-        <div className="fixed inset-0 z-40 bg-none flex items-center justify-center font-mono selection:bg-brand selection:text-white">
+        <div className="fixed inset-0 flex items-center justify-center font-mono selection:bg-brand selection:text-white px-4">
             <AnimatePresence mode="wait">
                 {!loginSuccess ? (
-                    <motion.form
-                        key="login-form"
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.4 }}
-                        onSubmit={handleLogin}
-                        className="w-full max-w-md p-10 bg-white/80 backdrop-blur-sm rounded-[2.5rem] shadow-xl shadow-black/5 border border-slate-100 space-y-6"
+                    <motion.div
+                        key="form"
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.97 }}
+                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                        className="w-full max-w-sm"
                     >
-                        <div className="text-center mb-8">
-                            <h1 className="font-black text-2xl tracking-tight mb-6">
+
+                        {/* Logo */}
+                        <div className="mb-10 text-center">
+                            <Link href="/" className="font-black text-2xl tracking-tight hover:opacity-70 transition-opacity">
                                 BB<span className="text-brand">EASY</span>
-                            </h1>
-                            <h2 className="text-3xl font-black text-slate-900">welcome back</h2>
-                            <p className="text-slate-500 mt-2">pick up where you left off.</p>
+                            </Link>
                         </div>
 
+                        {/* Header */}
+                        <div className="mb-8 border-b border-slate-200 pb-8">
+                            <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400 mb-2">Portal</p>
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">
+                                Welcome back.
+                            </h1>
+                        </div>
 
-                        <div className="space-y-4">
+                        {/* Form */}
+                        <form onSubmit={handleLogin} className="space-y-4">
                             <div>
-                                <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Email Address</label>
+                                <label className={labelClass}>Email</label>
                                 <input
                                     required
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="alex@wu.ac.at"
-                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand outline-none transition"
+                                    className={inputClass}
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-bold uppercase text-slate-400 ml-1 mb-2 block">Password</label>
+                                <label className={labelClass}>Password</label>
                                 <input
                                     required
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand outline-none transition"
+                                    className={inputClass}
                                 />
                             </div>
-                        </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:bg-brand-hover shadow-lg shadow-brand/20 transition duration-300 disabled:opacity-50 mt-4"
-                        >
-                            {loading ? 'Signing in...' : 'Sign In'}
-                        </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors disabled:opacity-40 mt-2"
+                            >
+                                {loading ? 'Signing in...' : 'Sign In'}
+                            </button>
+                        </form>
 
-                        <p className="text-center text-sm text-slate-500 pt-2">
-                            Don't have an account?{' '}
-                            <Link href="/auth/register" className="text-brand font-bold hover:underline">Register</Link>
+                        <p className="text-center text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-6">
+                            No account?{' '}
+                            <Link href="/auth/register" className="text-brand font-black hover:text-slate-900 transition-colors">
+                                Register
+                            </Link>
                         </p>
-                    </motion.form>
+                    </motion.div>
                 ) : (
-                    // The "Bridge" screen: Fades to a solid background to hide the Next.js route swap
                     <motion.div
-                        key="bridge-screen"
+                        key="bridge"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
-                        className="absolute inset-0 z-50 bg-slate-50"
+                        className="absolute inset-0 bg-slate-50"
                     />
                 )}
             </AnimatePresence>
