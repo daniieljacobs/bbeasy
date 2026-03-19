@@ -93,13 +93,13 @@ export default function LandingPage() {
         >
           <Link
             href="/auth/register"
-            className="flex items-center gap-2 px-8 py-4 bg-brand text-white text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 transition shadow-xl shadow-blue-200"
+            className="flex items-center gap-2 px-8 py-4 bg-brand text-white duration-300 text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 transition shadow-xl shadow-blue-200"
           >
             Get started free <ArrowRight size={14} />
           </Link>
           <Link
             href="/auth/login"
-            className="px-8 py-4 bg-white/60 backdrop-blur-sm border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-white transition"
+            className="px-8 py-4 bg-white/60 backdrop-blur-sm border border-slate-200 duration-300 hover:border-slate-600 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-white transition"
           >
             Sign in
           </Link>
