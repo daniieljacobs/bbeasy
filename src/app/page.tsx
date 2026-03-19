@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, GraduationCap, CheckCircle, BarChart3, Trophy } from 'lucide-react';
+import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle } from 'lucide-react';
 
 export default function LandingPage() {
   const [visible, setVisible] = useState(false);
@@ -13,130 +13,199 @@ export default function LandingPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  const v = (delay = 0) => ({
+    initial: { opacity: 0, y: 16 },
+    animate: { opacity: visible ? 1 : 0, y: visible ? 0 : 16 },
+    transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }
+  });
+
   const features = [
-    {
-      icon: <CheckCircle size={20} className="text-green-500" />,
-      title: "T/F Format",
-      desc: "Realistic multi-statement questions matching the exact WU BBE style."
-    },
-    {
-      icon: <BarChart3 size={20} className="text-brand" />,
-      title: "Detailed Analytics",
-      desc: "Track weak spots across Economics, Math, and English over time."
-    },
-    {
-      icon: <Trophy size={20} className="text-amber-500" />,
-      title: "Leaderboards",
-      desc: "See where you stand against other applicants with percentile rankings."
-    },
-    {
-      icon: <GraduationCap size={20} className="text-purple-500" />,
-      title: "Expert Content",
-      desc: "Curated questions based on the latest BBE syllabus and past exams."
-    },
+    { icon: <CheckCircle size={16} className="text-emerald-500" />, title: "True/False Format", desc: "Multi-statement questions matching the exact BBE style." },
+    { icon: <BarChart3 size={16} className="text-brand" />, title: "Subject Analytics", desc: "Track weak spots across Economics, Maths, and English." },
+    { icon: <Trophy size={16} className="text-amber-500" />, title: "Leaderboard", desc: "See where you stand against other applicants." },
+    { icon: <Shuffle size={16} className="text-violet-500" />, title: "Practice Mode", desc: "Personalised drills that target your weakest areas." },
+  ];
+
+  const proFeatures = [
+    'Unlimited mock exams',
+    'Personalised practice drills',
+    'Spider graph by subject',
+    'Avg. score & percentile',
+    'Leaderboard score tab',
+    'Weak area targeting',
   ];
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col items-center justify-center font-mono selection:bg-brand selection:text-white px-6">
+    <div className="min-h-screen font-mono bg-slate-50 selection:bg-brand selection:text-white">
 
-      {/* Top nav */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -10 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute top-0 left-0 right-0 flex items-center justify-between px-10 py-6"
+      {/* ── NAVBAR ── */}
+      <motion.nav
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -8 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="sticky top-0 z-50 bg-slate-50/80 backdrop-blur-md border-b border-slate-200"
       >
-        <span className="font-black text-lg tracking-tight">
-          BB<span className="text-brand">EASY</span>
-        </span>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/auth/login"
-            className="px-5 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 uppercase tracking-widest transition"
-          >
-            login
-          </Link>
-          <Link
-            href="/auth/register"
-            className="px-5 py-2 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-brand transition"
-          >
-            register
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* Hero */}
-      <div className="max-w-4xl w-full text-center space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 20 }}
-          transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-tint border border-blue-100 text-brand text-[10px] font-bold uppercase tracking-widest mb-8">
-            <GraduationCap size={12} /> 2026 BBE Admission Prep
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <span className="font-black text-lg tracking-tight">
+            BB<span className="text-brand">EASY</span>
+          </span>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/auth/login"
+              className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
+            >
+              Login
+            </Link>
+            <Link
+              href="/auth/register"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors"
+            >
+              Get Started <ArrowUpRight size={10} />
+            </Link>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter text-slate-900 leading-[1.05] mb-6">
-            Stop guessing.<br />
-            <span className="text-brand">Start scoring.</span>
-          </h1>
-          <p className="text-base text-slate-500 leading-relaxed max-w-xl mx-auto">
-            The only platform built specifically for the WU Wien BBE entrance exam.
-            Simulate the real thing, track your progress, and know exactly where you stand.
+        </div>
+      </motion.nav>
+
+      <div className="max-w-6xl mx-auto px-6">
+
+        {/* ── HERO ── */}
+        <div className="pt-24 pb-20 border-b border-slate-200">
+          <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-brand mb-6">
+            WU Wien · BBE Entrance Exam · 2026
+          </motion.p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
+            <div>
+              <motion.h1 {...v(0.1)} className="text-6xl md:text-7xl font-black text-slate-900 tracking-tight leading-[0.95] mb-8">
+                The BBE<br />
+                prep tool<br />
+                <span className="text-brand">built right.</span>
+              </motion.h1>
+              <motion.div {...v(0.2)} className="flex items-center gap-3">
+                <Link
+                  href="/auth/register"
+                  className="flex items-center gap-2 px-8 py-3.5 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors shadow-lg shadow-brand/20"
+                >
+                  Start for free <ArrowUpRight size={11} />
+                </Link>
+                <Link
+                  href="/auth/login"
+                  className="px-8 py-3.5 border border-slate-200 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-slate-400 hover:text-slate-900 transition-colors"
+                >
+                  Sign in
+                </Link>
+              </motion.div>
+            </div>
+
+            <motion.div {...v(0.15)} className="space-y-3">
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Built by a student, for students. While competitors charge €300–500,
+                BBEasy gives you everything you need to prepare for the WU Wien BBE
+                entrance exam — at a fraction of the cost.
+              </p>
+              <div className="flex items-center gap-6 pt-2">
+                <div>
+                  <p className="text-3xl font-black text-slate-900">€0</p>
+                  <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400">to start</p>
+                </div>
+                <div className="w-px h-10 bg-slate-200" />
+                <div>
+                  <p className="text-3xl font-black text-slate-900">€59</p>
+                  <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400">vs €300–500 elsewhere</p>
+                </div>
+                <div className="w-px h-10 bg-slate-200" />
+                <div>
+                  <p className="text-3xl font-black text-slate-900">3</p>
+                  <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400">subjects covered</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ── FEATURES ── */}
+        <div className="py-20 border-b border-slate-200">
+          <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-10">
+            What's included
+          </motion.p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200">
+            {features.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: visible ? 1 : 0 }}
+                transition={{ delay: 0.1 + i * 0.07 }}
+                className="bg-slate-50 px-6 py-8"
+              >
+                <div className="mb-4">{f.icon}</div>
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.15em] mb-2">{f.title}</h3>
+                <p className="text-[11px] text-slate-400 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PRICING ── */}
+        <div className="py-20 border-b border-slate-200">
+          <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-10">
+            Pricing
+          </motion.p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-200">
+
+            {/* Free */}
+            <motion.div {...v(0.1)} className="bg-slate-50 px-8 py-10">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Free</p>
+              <p className="text-5xl font-black text-slate-900 mb-1">€0</p>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mb-8">Always free</p>
+              <ul className="space-y-3 mb-10">
+                {['3 mock exams', 'Starter assessment', 'Prep points & leaderboard'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-xs text-slate-600">
+                    <span className="w-1 h-1 bg-slate-400 rounded-full shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/auth/register"
+                className="flex items-center justify-center gap-2 py-3 border border-slate-300 text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 hover:border-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Get started free
+              </Link>
+            </motion.div>
+
+            {/* Pro */}
+            <motion.div {...v(0.15)} className="bg-brand px-8 py-10">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60 mb-4">Pro</p>
+              <p className="text-5xl font-black text-white mb-1">€59</p>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-white/60 mb-8">One-time · lifetime access</p>
+              <ul className="space-y-3 mb-10">
+                {proFeatures.map(f => (
+                  <li key={f} className="flex items-center gap-2 text-xs text-white/80">
+                    <span className="w-1 h-1 bg-white/60 rounded-full shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/auth/register"
+                className="flex items-center justify-center gap-2 py-3 bg-white text-brand text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 hover:text-white transition-colors"
+              >
+                Get Pro <ArrowUpRight size={11} />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ── FOOTER ── */}
+        <motion.div {...v(0.1)} className="py-10 flex items-center justify-between">
+          <span className="font-black text-sm tracking-tight text-slate-400">
+            BB<span className="text-brand">EASY</span>
+          </span>
+          <p className="text-[9px] uppercase tracking-[0.3em] text-slate-300">
+            WU Wien · BBE 2026
           </p>
         </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 20 }}
-          transition={{ duration: 1, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-wrap justify-center gap-4"
-        >
-          <Link
-            href="/auth/register"
-            className="flex items-center gap-2 px-8 py-4 bg-brand text-white duration-300 text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 transition shadow-xl shadow-blue-200"
-          >
-            Get started free <ArrowRight size={14} />
-          </Link>
-          <Link
-            href="/auth/login"
-            className="px-8 py-4 bg-white/60 backdrop-blur-sm border border-slate-200 duration-300 hover:border-slate-600 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-white transition"
-          >
-            Sign in
-          </Link>
-        </motion.div>
-
-        {/* Feature Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 20 }}
-          transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"
-        >
-          {features.map((f, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 15 }}
-              transition={{ duration: 0.8, delay: 0.5 + (i * 0.1), ease: [0.16, 1, 0.3, 1] }}
-              className="p-6 bg-white/40 backdrop-blur-sm border border-white/60 rounded-[1.5rem] shadow-sm text-left"
-            >
-              <div className="mb-3">{f.icon}</div>
-              <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1">{f.title}</h3>
-              <p className="text-[11px] text-slate-400 leading-relaxed">{f.desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
       </div>
-
-      {/* Footer */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: visible ? 1 : 0 }}
-        transition={{ duration: 1, delay: 0.9 }}
-        className="absolute bottom-6 text-[9px] text-slate-400 uppercase tracking-[0.5em] opacity-40"
-      >
-        BBEasy &middot; WU Wien &middot; 2026
-      </motion.p>
     </div>
   );
 }

@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, createContext, useContext } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { LogOut, Crown } from 'lucide-react';
+import { LogOut, Crown, Timer, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// ─── ROLE CONTEXT ────────────────────────────────────────────────────────────
+// Lets child pages read the effective (possibly previewed) role
+export const RoleContext = createContext<{ effectiveRole: string; isPro: boolean }>({
+    effectiveRole: 'free',
+    isPro: false,
+});
 
 // --- 1. The Welcome / Onboarding Overlay ---
 function WelcomeOverlay() {
@@ -14,7 +21,6 @@ function WelcomeOverlay() {
     const isOnboarding = searchParams.get('onboarding');
     const newUserName = searchParams.get('name');
 
-    // Show overlay if EITHER welcome OR onboarding is in the URL
     const [showOverlay, setShowOverlay] = useState(!!welcomeName || !!isOnboarding);
 
     const loginMessages = [
@@ -31,7 +37,6 @@ function WelcomeOverlay() {
                 setShowOverlay(false);
                 window.history.replaceState(null, '', '/portal/dashboard');
             }, 2000);
-
             return () => clearTimeout(timer);
         }
     }, [welcomeName, isOnboarding]);
@@ -61,11 +66,9 @@ function WelcomeOverlay() {
                                 Welcome back{welcomeName && welcomeName !== 'true' ? `, ${welcomeName}` : ''}
                             </h1>
                         )}
-
                         <p className="text-[10px] text-brand mt-6 uppercase tracking-[0.4em] font-bold">
                             {isOnboarding ? 'GENERATING DIAGNOSTIC EXAM' : message}
                         </p>
-
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -83,10 +86,50 @@ function WelcomeOverlay() {
     );
 }
 
+function ExamCountdown() {
+    const [mounted, setMounted] = useState(false);
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+    useEffect(() => {
+        setMounted(true);
+        const targetDate = new Date('2026-06-30T03:00:00').getTime();
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const difference = targetDate - now;
+            if (difference > 0) {
+                setTimeLeft({
+                    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                    hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+                    minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+                    seconds: Math.floor((difference % (1000 * 60)) / 1000)
+                });
+            }
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    if (!mounted) return null;
+
+    const h = timeLeft.hours.toString().padStart(2, '0');
+    const m = timeLeft.minutes.toString().padStart(2, '0');
+    const s = timeLeft.seconds.toString().padStart(2, '0');
+
+    return (
+        <div className="fixed bottom-6 left-6 z-40 pointer-events-none flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-slate-400">
+            <Timer size={14} className="opacity-50" />
+            <span>{timeLeft.days}D : {h}H : {m}M : {s}S</span>
+        </div>
+    );
+}
+
 // --- 2. The Main Layout ---
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<any>(null);
-    const [isLoggingOut, setIsLoggingOut] = useState(false); // Added logout state
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -104,12 +147,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         fetchProfile();
     }, [router]);
 
-    // Added animation logic to logout
+    const [previewRole, setPreviewRole] = useState<string | null>(null);
+
     async function handleLogout() {
         setIsLoggingOut(true);
         setTimeout(async () => {
             await supabase.auth.signOut();
-            router.push('/auth/login');
+            router.push('/');
         }, 1200);
     }
 
@@ -118,129 +162,172 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         { label: 'leaderboard', href: '/portal/leaderboard' },
     ];
 
-    const isPro = profile?.role === 'pro' || profile?.role === 'admin';
+    const effectiveRole = previewRole ?? profile?.role;
+    const isPro = effectiveRole === 'pro' || effectiveRole === 'admin';
+    const isAdmin = profile?.role === 'admin'; // always based on real role
 
     return (
-        <div className="flex flex-col min-h-screen relative">
-            {/* Suspense wrapper required by Next.js for useSearchParams */}
-            <Suspense fallback={null}>
-                <WelcomeOverlay />
-            </Suspense>
+        <RoleContext.Provider value={{ effectiveRole, isPro }}>
+            <div className="flex flex-col min-h-screen relative">
+                <Suspense fallback={null}>
+                    <WelcomeOverlay />
+                </Suspense>
 
-            {/* Logout Bridge Overlay */}
-            <AnimatePresence>
-                {isLoggingOut && (
-                    <motion.div
-                        key="logout-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.4 }}
-                        className="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center font-mono selection:bg-brand selection:text-white"
-                    >
+                {/* Logout overlay */}
+                <AnimatePresence>
+                    {isLoggingOut && (
                         <motion.div
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.8 }}
-                            className="text-center"
+                            key="logout-overlay"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.4 }}
+                            className="fixed inset-0 z-[100] bg-slate-50 flex flex-col items-center justify-center font-mono"
                         >
-                            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
-                                See you next time.
-                            </h1>
-                            <p className="text-[10px] text-brand mt-6 uppercase tracking-[0.4em] font-bold">
-                                SECURELY LOGGING OUT
-                            </p>
+                            <motion.div
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2, duration: 0.8 }}
+                                className="text-center"
+                            >
+                                <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">
+                                    See you next time.
+                                </h1>
+                                <p className="text-[10px] text-brand mt-6 uppercase tracking-[0.4em] font-bold">
+                                    SECURELY LOGGING OUT
+                                </p>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>
 
-            <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-slate-100">
-                <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
+                <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-slate-100">
+                    <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
 
-                    <Link href="/portal/dashboard" className="font-black text-lg tracking-tight shrink-0">
-                        BB<span className="text-brand">EASY</span>
-                    </Link>
+                        <Link href="/portal/dashboard" className="font-black text-lg tracking-tight shrink-0">
+                            BB<span className="text-brand">EASY</span>
+                        </Link>
 
-                    <div className="flex items-center gap-1 flex-1">
-                        {navLinks.map(link => {
-                            const isActive = pathname.startsWith(link.href);
-                            return (
+                        <div className="flex items-center gap-1 flex-1">
+                            {navLinks.map(link => {
+                                const isActive = pathname.startsWith(link.href);
+                                return (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold tracking-widest uppercase transition-all ${isActive
+                                            ? 'text-slate-900 bg-slate-100'
+                                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        {link.label}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+
+                            {/* Admin button — only visible to admins */}
+                            {isAdmin && (
                                 <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold tracking-widest uppercase transition-all ${isActive
-                                        ? 'text-slate-900 bg-slate-100'
-                                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                                    href="/admin/dashboard"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-brand border border-brand/20 hover:bg-brand hover:text-white hover:border-brand transition-all"
+                                >
+                                    <ShieldCheck size={11} /> Admin
+                                </Link>
+                            )}
+
+                            {/* Role preview toggle — admin only */}
+                            {isAdmin && (
+                                <button
+                                    onClick={() => {
+                                        const roles = ['admin', 'pro', 'free'];
+                                        const current = previewRole ?? profile?.role;
+                                        const next = roles[(roles.indexOf(current) + 1) % roles.length];
+                                        setPreviewRole(next === profile?.role ? null : next);
+                                    }}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-all
+                                    ${previewRole
+                                            ? 'border-amber-300 text-amber-600 bg-amber-50'
+                                            : 'border-slate-200 text-slate-400 hover:border-slate-400'
+                                        }`}
+                                    title="Preview as different role"
+                                >
+                                    {previewRole ? `👁 ${previewRole}` : '👁 view as'}
+                                </button>
+                            )}
+
+                            {profile && (
+                                <Link
+                                    href="/portal/profile"
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition ${pathname === '/portal/profile'
+                                        ? 'bg-slate-100 border-slate-200'
+                                        : 'bg-slate-50 border-slate-100 hover:border-slate-200'
                                         }`}
                                 >
-                                    {link.label}
-                                </Link>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-
-                        {profile && (
-                            <Link
-                                href="/portal/profile"
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition ${pathname === '/portal/profile'
-                                    ? 'bg-slate-100 border-slate-200'
-                                    : 'bg-slate-50 border-slate-100 hover:border-slate-200'
-                                    }`}
-                            >
-                                <div className="w-5 h-5 rounded-full bg-brand-tint text-brand flex items-center justify-center text-[9px] font-black">
-                                    {profile.full_name?.charAt(0) || '?'}
-                                </div>
-                                <span className="text-xs font-bold text-slate-600">
-                                    {profile.username ? `@${profile.username}` : profile.full_name}
-                                </span>
-                                {isPro && (
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-brand bg-brand-tint px-1.5 py-0.5 rounded-full">
-                                        pro
+                                    <div className="w-5 h-5 rounded-full bg-brand-tint text-brand flex items-center justify-center text-[9px] font-black">
+                                        {profile.full_name?.charAt(0) || '?'}
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-600">
+                                        {profile.username ? `@${profile.username}` : profile.full_name}
                                     </span>
-                                )}
-                            </Link>
-                        )}
+                                    {isPro && (
+                                        <span className="text-[8px] font-black uppercase tracking-widest text-brand bg-brand-tint px-1.5 py-0.5 rounded-full">
+                                            pro
+                                        </span>
+                                    )}
+                                </Link>
+                            )}
 
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-widest"
-                        >
-                            <LogOut size={13} /> logout
-                        </button>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-widest"
+                            >
+                                <LogOut size={13} /> logout
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </nav>
+                </nav>
 
-            <main className="flex-1">
-                {children}
-            </main>
+                <main className="flex-1">
+                    {children}
+                </main>
 
-            {!isPro && (
-                <Link
-                    href="/portal/membership"
-                    className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 px-5 py-4 rounded-2xl transition-all hover:scale-105 hover:shadow-2xl"
-                    style={{
-                        background: 'rgba(255,255,255,0.7)',
-                        backdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(46,74,122,0.15)',
-                        boxShadow: '0 4px 24px rgba(46,74,122,0.1)',
-                    }}
-                >
-                    <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand">
-                        <Crown size={12} /> unlock insights
-                    </span>
-                    <ul className="flex flex-col gap-1">
-                        {['unlimited exams', 'know your weak spots', 'see your percentile'].map(f => (
-                            <li key={f} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 normal-case tracking-normal">
-                                <span className="w-1 h-1 rounded-full bg-brand opacity-40 shrink-0 inline-block" />
-                                {f}
-                            </li>
-                        ))}
-                    </ul>
-                </Link>
-            )}
-        </div>
+                <ExamCountdown />
+
+                {!isPro && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        className="fixed bottom-6 right-6 z-50"
+                    >
+                        <Link
+                            href="/portal/membership"
+                            className="group flex flex-col gap-3 px-6 py-5 bg-white border border-slate-200 hover:border-brand transition-all duration-200 hover:shadow-lg shadow-sm"
+                        >
+                            <span className="flex items-center justify-between gap-6">
+                                <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-brand">
+                                    <Crown size={11} /> Unlock Pro
+                                </span>
+                                <ArrowUpRight
+                                    size={11}
+                                    className="text-slate-300 group-hover:text-brand group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
+                                />
+                            </span>
+                            <div className="w-full h-px bg-slate-100" />
+                            <ul className="flex flex-col gap-1.5">
+                                {['Unlimited exams', 'Know your weak spots', 'See your percentile'].map(f => (
+                                    <li key={f} className="flex items-center gap-2 text-[9px] text-slate-400 uppercase tracking-[0.15em]">
+                                        <span className="w-1 h-1 bg-brand opacity-40 shrink-0" />
+                                        {f}
+                                    </li>
+                                ))}
+                            </ul>
+                        </Link>
+                    </motion.div>
+                )}
+            </div>
+        </RoleContext.Provider>
     );
 }

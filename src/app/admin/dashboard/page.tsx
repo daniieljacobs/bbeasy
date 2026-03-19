@@ -3,44 +3,35 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Users, FileText, Target, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const fadeUp = (delay = 0) => ({
+    initial: { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1], delay }
+});
 
 export default function AdminDashboardPage() {
-    const [stats, setStats] = useState({
-        totalUsers: 0,
-        totalTests: 0,
-        avgScore: 0,
-        totalPoints: 0
-    });
+    const [stats, setStats] = useState({ totalUsers: 0, totalTests: 0, avgScore: 0, totalPoints: 0 });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [scoreDistribution, setScoreDistribution] = useState<{ range: string; count: number }[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, []);
+    useEffect(() => { fetchDashboardData(); }, []);
 
     async function fetchDashboardData() {
-        // Total users
         const { count: userCount } = await supabase
             .from('profiles')
             .select('*', { count: 'exact', head: true });
 
-        // All test results
         const { data: results } = await supabase
             .from('test_results')
             .select('score, points_awarded, completed_at, user_id, tests(title, type)')
             .order('completed_at', { ascending: false });
 
-        // Recent activity with profile info
         const { data: recentResults } = await supabase
             .from('test_results')
-            .select(`
-                id,
-                score,
-                completed_at,
-                profiles (full_name, username),
-                tests (title, type)
-            `)
+            .select(`id, score, completed_at, profiles (full_name, username), tests (title, type)`)
             .order('completed_at', { ascending: false })
             .limit(8);
 
@@ -48,10 +39,7 @@ export default function AdminDashboardPage() {
             const avgScore = results.length > 0
                 ? Math.round(results.reduce((acc, r) => acc + r.score, 0) / results.length)
                 : 0;
-
             const totalPoints = results.reduce((acc, r) => acc + (r.points_awarded || 0), 0);
-
-            // Score distribution
             const ranges = [
                 { range: '0–20%', min: 0, max: 20 },
                 { range: '21–40%', min: 21, max: 40 },
@@ -59,20 +47,11 @@ export default function AdminDashboardPage() {
                 { range: '61–80%', min: 61, max: 80 },
                 { range: '81–100%', min: 81, max: 100 },
             ];
-
-            const distribution = ranges.map(r => ({
+            setStats({ totalUsers: userCount || 0, totalTests: results.length, avgScore, totalPoints });
+            setScoreDistribution(ranges.map(r => ({
                 range: r.range,
                 count: results.filter(res => res.score >= r.min && res.score <= r.max).length
-            }));
-
-            setStats({
-                totalUsers: userCount || 0,
-                totalTests: results.length,
-                avgScore,
-                totalPoints
-            });
-
-            setScoreDistribution(distribution);
+            })));
         }
 
         if (recentResults) setRecentActivity(recentResults);
@@ -83,116 +62,127 @@ export default function AdminDashboardPage() {
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-pulse flex flex-col items-center gap-4">
-                <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
-                <div className="h-4 w-32 bg-slate-200 rounded"></div>
+            <div className="flex flex-col items-center gap-3 font-mono">
+                <div className="w-px h-10 bg-brand animate-pulse" />
+                <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400">Loading</p>
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto px-6 py-14 font-mono">
 
-            {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black">Dashboard</h1>
-                <p className="text-slate-500">Platform overview at a glance.</p>
-            </div>
+            {/* ── HEADER ── */}
+            <motion.div {...fadeUp(0)} className="mb-14 border-b border-slate-200 pb-8">
+                <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400 mb-3">Admin</p>
+                <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">Dashboard.</h1>
+                <p className="text-slate-400 text-sm mt-2">Platform overview at a glance.</p>
+            </motion.div>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* ── STATS ── */}
+            <motion.div {...fadeUp(0.08)} className="mb-14 grid grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Users', value: stats.totalUsers, icon: <Users size={18} />, color: 'text-brand bg-brand-tint' },
-                    { label: 'Tests Taken', value: stats.totalTests, icon: <FileText size={18} />, color: 'text-purple-600 bg-purple-50' },
-                    { label: 'Avg. Score', value: `${stats.avgScore}%`, icon: <Target size={18} />, color: 'text-green-600 bg-green-50' },
-                    { label: 'Points Awarded', value: stats.totalPoints, icon: <Zap size={18} />, color: 'text-amber-600 bg-amber-50' },
-                ].map((stat) => (
-                    <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 py-5 flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${stat.color}`}>
-                            {stat.icon}
-                        </div>
-                        <div>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{stat.label}</p>
-                            <p className="text-xl font-black text-slate-900">{stat.value}</p>
-                        </div>
-                    </div>
+                    { label: 'Total Users', value: stats.totalUsers, icon: <Users size={15} /> },
+                    { label: 'Tests Taken', value: stats.totalTests, icon: <FileText size={15} /> },
+                    { label: 'Avg. Score', value: `${stats.avgScore}%`, icon: <Target size={15} /> },
+                    { label: 'Points Awarded', value: stats.totalPoints, icon: <Zap size={15} /> },
+                ].map((s, i) => (
+                    <motion.div
+                        key={s.label}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 + i * 0.06 }}
+                        className="flex flex-col gap-2 py-6 border-t-2 border-slate-900"
+                    >
+                        <span className="text-slate-400">{s.icon}</span>
+                        <p className="text-3xl font-black text-slate-900 mt-1">{s.value}</p>
+                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400">{s.label}</p>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* Score Distribution */}
-                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 space-y-6">
-                    <div>
-                        <p className="font-black text-slate-900">Score Distribution</p>
-                        <p className="text-xs text-slate-400">How students are scoring across all tests</p>
-                    </div>
+                {/* ── SCORE DISTRIBUTION ── */}
+                <motion.div {...fadeUp(0.16)} className="bg-white border border-slate-100 p-8">
+                    <p className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400 mb-1">Score Distribution</p>
+                    <p className="text-xs text-slate-400 mb-8">How students are scoring across all tests</p>
 
                     {scoreDistribution.every(d => d.count === 0) ? (
-                        <p className="text-slate-400 text-sm italic text-center py-8">No results yet.</p>
+                        <div className="py-16 text-center">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-slate-300">No results yet</p>
+                        </div>
                     ) : (
-                        <div className="space-y-3">
-                            {scoreDistribution.map((d) => (
+                        <div className="space-y-4">
+                            {scoreDistribution.map((d, i) => (
                                 <div key={d.range} className="flex items-center gap-4">
-                                    <p className="text-[10px] font-black text-slate-400 w-16 shrink-0">{d.range}</p>
-                                    <div className="flex-1 bg-slate-50 rounded-full h-3 overflow-hidden">
-                                        <div
-                                            className="h-full bg-brand rounded-full transition-all duration-500"
-                                            style={{ width: `${(d.count / maxCount) * 100}%` }}
+                                    <p className="text-[9px] font-black text-slate-400 w-16 shrink-0 uppercase tracking-[0.1em]">
+                                        {d.range}
+                                    </p>
+                                    <div className="flex-1 h-1 bg-slate-100 overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${(d.count / maxCount) * 100}%` }}
+                                            transition={{ duration: 0.6, delay: 0.2 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                                            className="h-full bg-brand"
                                         />
                                     </div>
-                                    <p className="text-[10px] font-black text-slate-400 w-6 text-right shrink-0">{d.count}</p>
+                                    <p className="text-[9px] font-black text-slate-400 w-4 text-right shrink-0">{d.count}</p>
                                 </div>
                             ))}
                         </div>
                     )}
-                </div>
+                </motion.div>
 
-                {/* Recent Activity */}
-                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 space-y-6">
-                    <div>
-                        <p className="font-black text-slate-900">Recent Activity</p>
-                        <p className="text-xs text-slate-400">Latest test completions</p>
-                    </div>
+                {/* ── RECENT ACTIVITY ── */}
+                <motion.div {...fadeUp(0.2)} className="bg-white border border-slate-100 p-8">
+                    <p className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400 mb-1">Recent Activity</p>
+                    <p className="text-xs text-slate-400 mb-8">Latest test completions</p>
 
                     {recentActivity.length === 0 ? (
-                        <p className="text-slate-400 text-sm italic text-center py-8">No activity yet.</p>
+                        <div className="py-16 text-center">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-slate-300">No activity yet</p>
+                        </div>
                     ) : (
-                        <div className="space-y-3">
-                            {recentActivity.map((r: any) => {
+                        <div className="space-y-0 divide-y divide-slate-50">
+                            {recentActivity.map((r: any, i: number) => {
                                 const name = r.profiles?.username
                                     ? `@${r.profiles.username}`
                                     : r.profiles?.full_name || 'Unknown';
 
                                 return (
-                                    <div key={r.id} className="flex items-center justify-between gap-4">
+                                    <motion.div
+                                        key={r.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.25 + i * 0.04 }}
+                                        className="flex items-center justify-between gap-4 py-3"
+                                    >
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-8 h-8 rounded-full bg-brand-tint text-brand flex items-center justify-center font-black text-xs shrink-0">
-                                                {(r.profiles?.full_name || '?').charAt(0)}
+                                            <div className="w-6 h-6 bg-slate-100 flex items-center justify-center text-[9px] font-black text-slate-500 shrink-0">
+                                                {(r.profiles?.full_name || '?').charAt(0).toUpperCase()}
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-xs font-bold text-slate-900 truncate">
-                                                    {name}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400 truncate">
+                                                <p className="text-xs font-black text-slate-900 truncate">{name}</p>
+                                                <p className="text-[9px] uppercase tracking-[0.1em] text-slate-400 truncate">
                                                     {r.tests?.title || 'Unknown Test'}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className={`text-sm font-black ${r.score >= 70 ? 'text-green-600' : 'text-red-400'}`}>
+                                            <p className={`text-sm font-black ${r.score >= 70 ? 'text-emerald-500' : 'text-red-400'}`}>
                                                 {r.score}%
                                             </p>
-                                            <p className="text-[9px] text-slate-400">
-                                                {new Date(r.completed_at).toLocaleDateString()}
+                                            <p className="text-[9px] uppercase tracking-[0.1em] text-slate-300">
+                                                {new Date(r.completed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                                             </p>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 );
                             })}
                         </div>
                     )}
-                </div>
+                </motion.div>
             </div>
         </div>
     );

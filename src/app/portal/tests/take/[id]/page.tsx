@@ -14,11 +14,13 @@ export default async function TakeTestPage({ params }: PageProps) {
         .select(`
             id,
             title,
+            time_limit,
             test_questions (
                 question_order,
                 questions (
                     id,
                     question_text,
+                    points,
                     category_id,
                     subcategory_id,
                     question_items (
@@ -43,6 +45,7 @@ export default async function TakeTestPage({ params }: PageProps) {
             id: tq.questions.id,
             topic: "Assessment Section",
             questionText: tq.questions.question_text,
+            points: tq.questions.points,
             statements: tq.questions.question_items.map((item: any) => ({
                 id: item.id,
                 text: item.item_text,
@@ -52,14 +55,11 @@ export default async function TakeTestPage({ params }: PageProps) {
 
     return (
         <div className="py-8 max-w-4xl mx-auto px-4">
-            <header className="mb-10 text-center">
-                <h1 className="text-3xl font-black text-slate-900">{test.title}</h1>
-                <p className="text-slate-500 font-medium mt-2">
-                    Carefully evaluate every statement.
-                </p>
-            </header>
-
-            <TestRunner questions={formattedQuestions} />
+            <TestRunner
+                questions={formattedQuestions}
+                testTitle={test.title}
+                timeLimitMins={test.time_limit ?? 180}
+            />
         </div>
     );
 }

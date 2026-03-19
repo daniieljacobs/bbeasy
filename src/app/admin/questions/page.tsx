@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Trash2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Save, Loader2, PlusCircle, Plus, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Statement {
     id: string;
@@ -14,6 +15,7 @@ interface NewQuestion {
     categoryId: string;
     subcategoryId: string;
     questionText: string;
+    points: number;
     statements: Statement[];
 }
 
@@ -27,37 +29,23 @@ export default function QuestionBankPage() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [savingId, setSavingId] = useState<string | null>(null);
     const [editState, setEditState] = useState<Record<string, any>>({});
-
-    // New question form state
     const [showNewForm, setShowNewForm] = useState(false);
     const [isSavingNew, setIsSavingNew] = useState(false);
     const [newQuestion, setNewQuestion] = useState<NewQuestion>({
-        categoryId: '',
-        subcategoryId: '',
-        questionText: '',
+        categoryId: '', subcategoryId: '', questionText: '', points: 0,
         statements: [{ id: crypto.randomUUID(), text: '', isCorrect: true }]
     });
 
-    useEffect(() => {
-        fetchAll();
-    }, []);
+    useEffect(() => { fetchAll(); }, []);
 
     async function fetchAll() {
         const { data: cats } = await supabase.from('categories').select('*').order('name');
         const { data: subs } = await supabase.from('subcategories').select('*').order('name');
-
         const { data: qs } = await supabase
             .from('questions')
-            .select(`
-                id,
-                question_text,
-                category_id,
-                subcategory_id,
+            .select(`id, question_text, category_id, subcategory_id, points,
                 question_items (id, item_text, is_correct),
-                test_questions (
-                    tests (id, title)
-                )
-            `)
+                test_questions (tests (id, title))`)
             .order('created_at', { ascending: false });
 
         if (cats) setCategories(cats);
@@ -70,31 +58,26 @@ export default function QuestionBankPage() {
                     questionText: q.question_text,
                     categoryId: q.category_id || "",
                     subcategoryId: q.subcategory_id || "",
+                    points: q.points ?? (q.question_items.length - 1),
                     statements: q.question_items.map((item: any) => ({
-                        id: item.id,
-                        text: item.item_text,
-                        isCorrect: item.is_correct
+                        id: item.id, text: item.item_text, isCorrect: item.is_correct
                     }))
                 };
             });
             setEditState(initialEdit);
         }
-
         setLoading(false);
     }
 
-    // --- New question handlers ---
     function resetNewForm() {
         setNewQuestion({
-            categoryId: '',
-            subcategoryId: '',
-            questionText: '',
+            categoryId: '', subcategoryId: '', questionText: '', points: 0,
             statements: [{ id: crypto.randomUUID(), text: '', isCorrect: true }]
         });
     }
 
     async function handleCreateCategory() {
-        const name = prompt("Enter new Category name:");
+        const name = prompt("New category name:");
         if (!name) return;
         const { data, error } = await supabase.from('categories').insert({ name }).select().single();
         if (error) return alert("Error: " + error.message);
@@ -103,14 +86,11 @@ export default function QuestionBankPage() {
     }
 
     async function handleCreateSubcategory() {
-        if (!newQuestion.categoryId) return alert("Please select a Category first.");
-        const name = prompt("Enter new Subcategory name:");
+        if (!newQuestion.categoryId) return alert("Select a category first.");
+        const name = prompt("New subcategory name:");
         if (!name) return;
         const { data, error } = await supabase
-            .from('subcategories')
-            .insert({ category_id: newQuestion.categoryId, name })
-            .select()
-            .single();
+            .from('subcategories').insert({ category_id: newQuestion.categoryId, name }).select().single();
         if (error) return alert("Error: " + error.message);
         setAllSubcategories([...allSubcategories, data]);
         setNewQuestion(prev => ({ ...prev, subcategoryId: data.id }));
@@ -120,43 +100,29 @@ export default function QuestionBankPage() {
         if (!newQuestion.questionText) return alert("Question text is required.");
         if (newQuestion.statements.some(s => !s.text)) return alert("All statements must have text.");
         setIsSavingNew(true);
-
         try {
+            const points = newQuestion.points || (newQuestion.statements.length - 1);
             const { data: qData, error: qErr } = await supabase
                 .from('questions')
                 .insert({
-                    category_id: newQuestion.categoryId || null,
-                    subcategory_id: newQuestion.subcategoryId || null,
-                    question_text: newQuestion.questionText
+                    category_id: newQuestion.categoryId || null, subcategory_id: newQuestion.subcategoryId || null,
+                    question_text: newQuestion.questionText, points
                 })
-                .select()
-                .single();
-
-            if (qErr) {
-                alert("Error saving question: " + qErr.message);
-                return;
-            }
-
+                .select().single();
+            if (qErr) { alert("Error: " + qErr.message); return; }
             await supabase.from('question_items').insert(
-                newQuestion.statements.map(s => ({
-                    question_id: qData.id,
-                    item_text: s.text,
-                    is_correct: s.isCorrect
-                }))
+                newQuestion.statements.map(s => ({ question_id: qData.id, item_text: s.text, is_correct: s.isCorrect }))
             );
-
             await fetchAll();
             resetNewForm();
             setShowNewForm(false);
         } catch (err) {
-            console.error(err);
             alert("Unexpected error.");
         } finally {
             setIsSavingNew(false);
         }
     }
 
-    // --- Existing question handlers ---
     const filteredQuestions = questions.filter(q => {
         if (filterCategory && q.category_id !== filterCategory) return false;
         if (filterSubcategory && q.subcategory_id !== filterSubcategory) return false;
@@ -170,44 +136,32 @@ export default function QuestionBankPage() {
     async function handleDelete(id: string) {
         const confirmed = confirm("Delete this question? It will be removed from all linked tests.");
         if (!confirmed) return;
-
         await supabase.from('question_items').delete().eq('question_id', id);
         await supabase.from('test_questions').delete().eq('question_id', id);
         await supabase.from('questions').delete().eq('id', id);
-
         setQuestions(questions.filter(q => q.id !== id));
     }
 
     async function handleSave(qId: string) {
         setSavingId(qId);
         const edit = editState[qId];
-
-        await supabase
-            .from('questions')
-            .update({
-                question_text: edit.questionText,
-                category_id: edit.categoryId || null,
-                subcategory_id: edit.subcategoryId || null
-            })
-            .eq('id', qId);
-
+        await supabase.from('questions').update({
+            question_text: edit.questionText,
+            category_id: edit.categoryId || null,
+            subcategory_id: edit.subcategoryId || null,
+            points: edit.points
+        }).eq('id', qId);
         for (const s of edit.statements) {
-            await supabase
-                .from('question_items')
-                .update({ item_text: s.text, is_correct: s.isCorrect })
-                .eq('id', s.id);
+            await supabase.from('question_items')
+                .update({ item_text: s.text, is_correct: s.isCorrect }).eq('id', s.id);
         }
-
         await fetchAll();
         setSavingId(null);
         setExpandedId(null);
     }
 
     function updateEdit(qId: string, field: string, value: any) {
-        setEditState(prev => ({
-            ...prev,
-            [qId]: { ...prev[qId], [field]: value }
-        }));
+        setEditState(prev => ({ ...prev, [qId]: { ...prev[qId], [field]: value } }));
     }
 
     function updateStatement(qId: string, sIdx: number, field: string, value: any) {
@@ -216,108 +170,137 @@ export default function QuestionBankPage() {
         updateEdit(qId, 'statements', statements);
     }
 
+    const selectClass = "w-full px-3 py-2 bg-white border border-slate-200 text-[9px] font-black uppercase tracking-[0.1em] outline-none focus:border-brand transition-colors text-slate-600";
+    const labelClass = "text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1.5 block";
+
     if (loading) return (
         <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-pulse flex flex-col items-center gap-4">
-                <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
-                <div className="h-4 w-32 bg-slate-200 rounded"></div>
+            <div className="flex flex-col items-center gap-3 font-mono">
+                <div className="w-px h-10 bg-brand animate-pulse" />
+                <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400">Loading</p>
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto px-6 py-14 font-mono">
 
-            {/* Header */}
-            <div className="flex justify-between items-end">
+            {/* ── HEADER ── */}
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="mb-14 border-b border-slate-200 pb-8 flex items-end justify-between"
+            >
                 <div>
-                    <h1 className="text-3xl font-black">Question Bank</h1>
-                    <p className="text-slate-500">{questions.length} questions total</p>
+                    <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400 mb-3">Admin</p>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">Questions.</h1>
+                    <p className="text-slate-400 text-sm mt-2">{questions.length} questions in bank</p>
                 </div>
                 <button
                     onClick={() => { setShowNewForm(!showNewForm); resetNewForm(); }}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition ${showNewForm ? 'bg-slate-100 text-slate-600' : 'bg-brand text-white shadow-lg shadow-blue-100 hover:bg-brand-hover'}`}
+                    className={`flex items-center gap-2 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-colors
+                        ${showNewForm
+                            ? 'bg-slate-100 text-slate-600 border-slate-200'
+                            : 'bg-brand text-white border-brand hover:bg-slate-900 hover:border-slate-900'
+                        }`}
                 >
-                    {showNewForm ? <><X size={18} /> Cancel</> : <><Plus size={18} /> New Question</>}
+                    {showNewForm ? <><X size={12} /> Cancel</> : <><Plus size={12} /> New Question</>}
                 </button>
-            </div>
+            </motion.div>
 
-            {/* New Question Form */}
-            {showNewForm && (
-                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden border-t-8 border-t-brand-tint0">
-                    <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 grid md:grid-cols-3 gap-6 items-center">
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400">Category</label>
-                                <button onClick={handleCreateCategory} className="text-[9px] font-bold text-brand hover:underline flex items-center gap-0.5">
-                                    <PlusCircle size={10} /> NEW
-                                </button>
-                            </div>
-                            <select
-                                value={newQuestion.categoryId}
-                                onChange={(e) => setNewQuestion(prev => ({ ...prev, categoryId: e.target.value, subcategoryId: '' }))}
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold outline-none"
-                            >
-                                <option value="">Select Category...</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-
-                        <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <label className="text-[9px] font-black uppercase text-slate-400">Subcategory</label>
-                                <button
-                                    onClick={handleCreateSubcategory}
-                                    disabled={!newQuestion.categoryId}
-                                    className="text-[9px] font-bold text-brand hover:underline flex items-center gap-0.5 disabled:text-slate-300"
-                                >
-                                    <PlusCircle size={10} /> NEW
-                                </button>
-                            </div>
-                            <select
-                                disabled={!newQuestion.categoryId}
-                                value={newQuestion.subcategoryId}
-                                onChange={(e) => setNewQuestion(prev => ({ ...prev, subcategoryId: e.target.value }))}
-                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold disabled:opacity-50 outline-none"
-                            >
-                                <option value="">Select Subcategory...</option>
-                                {allSubcategories.filter(s => s.category_id === newQuestion.categoryId).map(s => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="flex justify-end pt-4">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-brand bg-brand-tint px-3 py-1 rounded-full">
-                                New Question
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="p-8 space-y-6">
-                        <textarea
-                            value={newQuestion.questionText}
-                            onChange={(e) => setNewQuestion(prev => ({ ...prev, questionText: e.target.value }))}
-                            placeholder="Enter the question stem..."
-                            rows={3}
-                            className="w-full text-lg font-bold p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 ring-brand-tint transition-all"
-                        />
-
-                        <div className="space-y-3">
-                            <label className="text-[9px] font-black uppercase text-slate-400 block tracking-widest">Statements</label>
-                            {newQuestion.statements.map((s, sIdx) => (
-                                <div key={s.id} className="flex gap-3 items-center group/item">
-                                    <button
-                                        onClick={() => {
-                                            const updated = [...newQuestion.statements];
-                                            updated[sIdx].isCorrect = !updated[sIdx].isCorrect;
-                                            setNewQuestion(prev => ({ ...prev, statements: updated }));
-                                        }}
-                                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition shrink-0 ${s.isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
+            {/* ── NEW QUESTION FORM ── */}
+            <AnimatePresence>
+                {showNewForm && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.3 }}
+                        className="mb-8 bg-white border-l-2 border-l-brand border border-slate-100"
+                    >
+                        {/* Form header */}
+                        <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 grid grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label className={labelClass}>Category</label>
+                                <div className="flex items-center gap-1.5">
+                                    <select
+                                        value={newQuestion.categoryId}
+                                        onChange={(e) => setNewQuestion(prev => ({ ...prev, categoryId: e.target.value, subcategoryId: '' }))}
+                                        className={selectClass}
                                     >
-                                        {s.isCorrect ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+                                        <option value="">Category...</option>
+                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                    <button onClick={handleCreateCategory} className="text-slate-300 hover:text-brand transition-colors shrink-0">
+                                        <PlusCircle size={12} />
                                     </button>
-                                    <div className="flex-1 relative">
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Subcategory</label>
+                                <div className="flex items-center gap-1.5">
+                                    <select
+                                        disabled={!newQuestion.categoryId}
+                                        value={newQuestion.subcategoryId}
+                                        onChange={(e) => setNewQuestion(prev => ({ ...prev, subcategoryId: e.target.value }))}
+                                        className={`${selectClass} disabled:opacity-30`}
+                                    >
+                                        <option value="">Subcategory...</option>
+                                        {allSubcategories.filter(s => s.category_id === newQuestion.categoryId).map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        onClick={handleCreateSubcategory}
+                                        disabled={!newQuestion.categoryId}
+                                        className="text-slate-300 hover:text-brand transition-colors shrink-0 disabled:opacity-20"
+                                    >
+                                        <PlusCircle size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label className={labelClass}>Points</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    value={newQuestion.points || (newQuestion.statements.length - 1)}
+                                    onChange={(e) => setNewQuestion(prev => ({ ...prev, points: parseInt(e.target.value) || 0 }))}
+                                    className="w-full px-3 py-2 bg-white border border-slate-200 text-[9px] font-black text-center outline-none focus:border-brand transition-colors"
+                                />
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">
+                                    {newQuestion.statements.length} statements · n-1 = {newQuestion.statements.length - 1} pts
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Form body */}
+                        <div className="p-6 space-y-4">
+                            <textarea
+                                value={newQuestion.questionText}
+                                onChange={(e) => setNewQuestion(prev => ({ ...prev, questionText: e.target.value }))}
+                                placeholder="Enter question stem..."
+                                rows={2}
+                                className="w-full text-sm font-bold text-slate-900 p-4 bg-slate-50 border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
+                            />
+
+                            <div className="space-y-2">
+                                {newQuestion.statements.map((s, sIdx) => (
+                                    <div key={s.id} className="flex gap-3 items-center">
+                                        <button
+                                            onClick={() => {
+                                                const updated = [...newQuestion.statements];
+                                                updated[sIdx].isCorrect = !updated[sIdx].isCorrect;
+                                                setNewQuestion(prev => ({ ...prev, statements: updated }));
+                                            }}
+                                            className={`w-8 h-8 flex items-center justify-center transition-colors shrink-0
+                                                ${s.isCorrect ? 'text-emerald-500 bg-emerald-50' : 'text-red-400 bg-red-50'}`}
+                                        >
+                                            {s.isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                        </button>
                                         <input
                                             value={s.text}
                                             onChange={(e) => {
@@ -326,7 +309,7 @@ export default function QuestionBankPage() {
                                                 setNewQuestion(prev => ({ ...prev, statements: updated }));
                                             }}
                                             placeholder={`Statement ${sIdx + 1}...`}
-                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400 transition"
+                                            className="flex-1 px-4 py-2 bg-white border border-slate-100 text-sm outline-none focus:border-brand transition-colors placeholder:text-slate-300"
                                         />
                                         {newQuestion.statements.length > 1 && (
                                             <button
@@ -334,204 +317,241 @@ export default function QuestionBankPage() {
                                                     ...prev,
                                                     statements: prev.statements.filter((_, i) => i !== sIdx)
                                                 }))}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                                className="text-slate-200 hover:text-red-400 transition-colors"
                                             >
-                                                <Trash2 size={16} />
+                                                <X size={12} />
                                             </button>
                                         )}
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                                <button
+                                    onClick={() => setNewQuestion(prev => ({
+                                        ...prev,
+                                        statements: [...prev.statements, { id: crypto.randomUUID(), text: '', isCorrect: true }]
+                                    }))}
+                                    className="w-full py-2.5 border border-dashed border-slate-200 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 hover:text-brand hover:border-brand transition-colors"
+                                >
+                                    + Add Statement
+                                </button>
+                            </div>
 
-                            <button
-                                onClick={() => setNewQuestion(prev => ({
-                                    ...prev,
-                                    statements: [...prev.statements, { id: crypto.randomUUID(), text: '', isCorrect: true }]
-                                }))}
-                                className="w-full py-3 border-2 border-dashed border-slate-100 rounded-xl text-slate-300 text-xs font-black hover:bg-slate-50 transition-all"
-                            >
-                                + ADD STATEMENT
-                            </button>
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleSaveNew}
+                                    disabled={isSavingNew}
+                                    className="flex items-center gap-2 px-8 py-3 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors disabled:opacity-40"
+                                >
+                                    {isSavingNew ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                    Save to Bank
+                                </button>
+                            </div>
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                        <div className="flex justify-end">
-                            <button
-                                onClick={handleSaveNew}
-                                disabled={isSavingNew}
-                                className="flex items-center gap-2 px-8 py-3 bg-brand text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-brand-hover transition disabled:opacity-50"
-                            >
-                                {isSavingNew ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                Save to Bank
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Filters */}
-            <div className="flex gap-4 flex-wrap">
+            {/* ── FILTERS ── */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.08 }}
+                className="flex items-center gap-3 mb-6"
+            >
                 <select
                     value={filterCategory}
                     onChange={(e) => { setFilterCategory(e.target.value); setFilterSubcategory(""); }}
-                    className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none"
+                    className="px-3 py-2 bg-white border border-slate-200 text-[9px] font-black uppercase tracking-[0.1em] outline-none focus:border-brand transition-colors text-slate-600"
                 >
                     <option value="">All Categories</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-
                 <select
                     value={filterSubcategory}
                     onChange={(e) => setFilterSubcategory(e.target.value)}
                     disabled={!filterCategory}
-                    className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none disabled:opacity-40"
+                    className="px-3 py-2 bg-white border border-slate-200 text-[9px] font-black uppercase tracking-[0.1em] outline-none focus:border-brand transition-colors disabled:opacity-30 text-slate-600"
                 >
                     <option value="">All Subcategories</option>
                     {visibleSubcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-
                 {(filterCategory || filterSubcategory) && (
                     <button
                         onClick={() => { setFilterCategory(""); setFilterSubcategory(""); }}
-                        className="px-4 py-3 text-sm font-bold text-slate-400 hover:text-slate-900 transition"
+                        className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
                     >
-                        Clear filters
+                        Clear
                     </button>
                 )}
-            </div>
+                <span className="ml-auto text-[9px] uppercase tracking-[0.2em] text-slate-300">
+                    {filteredQuestions.length} shown
+                </span>
+            </motion.div>
 
-            {/* Question List */}
-            <div className="space-y-4">
-                {filteredQuestions.length === 0 && (
-                    <div className="py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                        <p className="text-slate-400 font-bold italic">No questions found.</p>
+            {/* ── QUESTION LIST ── */}
+            <div className="bg-white border border-slate-100">
+                {filteredQuestions.length === 0 ? (
+                    <div className="py-24 text-center border border-dashed border-slate-200">
+                        <p className="text-[9px] uppercase tracking-[0.4em] text-slate-300 mb-2">No questions found</p>
                     </div>
-                )}
+                ) : (
+                    filteredQuestions.map((q, i) => {
+                        const isExpanded = expandedId === q.id;
+                        const edit = editState[q.id];
+                        const category = categories.find(c => c.id === q.category_id);
+                        const subcategory = allSubcategories.find(s => s.id === q.subcategory_id);
+                        const linkedTests = q.test_questions?.map((tq: any) => tq.tests).filter(Boolean) || [];
 
-                {filteredQuestions.map((q) => {
-                    const isExpanded = expandedId === q.id;
-                    const edit = editState[q.id];
-                    const category = categories.find(c => c.id === q.category_id);
-                    const subcategory = allSubcategories.find(s => s.id === q.subcategory_id);
-                    const linkedTests = q.test_questions?.map((tq: any) => tq.tests).filter(Boolean) || [];
-
-                    return (
-                        <div key={q.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 flex items-center gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-slate-900 truncate">{q.question_text}</p>
-                                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                                        {category && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand bg-brand-tint px-2 py-0.5 rounded-full">
-                                                {category.name}
+                        return (
+                            <motion.div
+                                key={q.id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.03 }}
+                                className="border-b border-slate-50 last:border-b-0"
+                            >
+                                {/* Row */}
+                                <div className="px-6 py-4 flex items-center gap-4 group hover:bg-slate-50/50 transition-colors">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-black text-slate-900 truncate">{q.question_text}</p>
+                                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                            {category && (
+                                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-brand">
+                                                    {category.name}
+                                                </span>
+                                            )}
+                                            {subcategory && (
+                                                <span className="text-[8px] uppercase tracking-[0.2em] text-slate-400">
+                                                    {subcategory.name}
+                                                </span>
+                                            )}
+                                            <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">
+                                                {q.question_items?.length || 0} statements · {q.points ?? (q.question_items?.length - 1)} pts
                                             </span>
-                                        )}
-                                        {subcategory && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
-                                                {subcategory.name}
-                                            </span>
-                                        )}
-                                        {linkedTests.length > 0 ? (
-                                            <span className="text-[10px] font-medium text-slate-400">
-                                                Linked to: {linkedTests.map((t: any) => t.title).join(', ')}
-                                            </span>
-                                        ) : (
-                                            <span className="text-[10px] font-medium text-orange-400">
-                                                Not linked to any test
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 shrink-0">
-                                    <button
-                                        onClick={() => setExpandedId(isExpanded ? null : q.id)}
-                                        className="p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-brand transition"
-                                    >
-                                        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(q.id)}
-                                        className="p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-red-600 transition"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {isExpanded && edit && (
-                                <div className="border-t border-slate-100 px-8 py-6 space-y-6 bg-slate-50/50">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[9px] font-black uppercase text-slate-400 mb-1 block tracking-widest">Category</label>
-                                            <select
-                                                value={edit.categoryId}
-                                                onChange={(e) => updateEdit(q.id, 'categoryId', e.target.value)}
-                                                className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none"
-                                            >
-                                                <option value="">None</option>
-                                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-black uppercase text-slate-400 mb-1 block tracking-widest">Subcategory</label>
-                                            <select
-                                                value={edit.subcategoryId}
-                                                disabled={!edit.categoryId}
-                                                onChange={(e) => updateEdit(q.id, 'subcategoryId', e.target.value)}
-                                                className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none disabled:opacity-40"
-                                            >
-                                                <option value="">None</option>
-                                                {allSubcategories
-                                                    .filter(s => s.category_id === edit.categoryId)
-                                                    .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                            </select>
+                                            {linkedTests.length > 0 ? (
+                                                <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">
+                                                    {linkedTests.map((t: any) => t.title).join(', ')}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[8px] uppercase tracking-[0.2em] text-amber-400">
+                                                    Unlinked
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="text-[9px] font-black uppercase text-slate-400 mb-1 block tracking-widest">Question</label>
-                                        <textarea
-                                            value={edit.questionText}
-                                            onChange={(e) => updateEdit(q.id, 'questionText', e.target.value)}
-                                            className="w-full p-4 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-400 transition"
-                                            rows={3}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <label className="text-[9px] font-black uppercase text-slate-400 block tracking-widest">Statements</label>
-                                        {edit.statements.map((s: any, sIdx: number) => (
-                                            <div key={s.id} className="flex gap-3 items-center">
-                                                <button
-                                                    onClick={() => updateStatement(q.id, sIdx, 'isCorrect', !s.isCorrect)}
-                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition shrink-0 ${s.isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
-                                                >
-                                                    {s.isCorrect ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
-                                                </button>
-                                                <input
-                                                    value={s.text}
-                                                    onChange={(e) => updateStatement(q.id, sIdx, 'text', e.target.value)}
-                                                    className="flex-1 p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-400 transition"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="flex justify-end">
+                                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
-                                            onClick={() => handleSave(q.id)}
-                                            disabled={savingId === q.id}
-                                            className="flex items-center gap-2 px-8 py-3 bg-brand text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-brand-hover transition disabled:opacity-50"
+                                            onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                                            className="p-2 text-slate-400 hover:text-brand transition-colors"
                                         >
-                                            {savingId === q.id ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                            Save Changes
+                                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(q.id)}
+                                            className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <Trash2 size={14} />
                                         </button>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    );
-                })}
+
+                                {/* Expanded edit */}
+                                <AnimatePresence>
+                                    {isExpanded && edit && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            transition={{ duration: 0.25 }}
+                                            className="border-t border-slate-100 overflow-hidden"
+                                        >
+                                            <div className="px-6 py-5 space-y-4 bg-slate-50/30">
+
+                                                {/* Meta row */}
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div>
+                                                        <label className={labelClass}>Category</label>
+                                                        <select
+                                                            value={edit.categoryId}
+                                                            onChange={(e) => updateEdit(q.id, 'categoryId', e.target.value)}
+                                                            className={selectClass}
+                                                        >
+                                                            <option value="">None</option>
+                                                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>Subcategory</label>
+                                                        <select
+                                                            value={edit.subcategoryId}
+                                                            disabled={!edit.categoryId}
+                                                            onChange={(e) => updateEdit(q.id, 'subcategoryId', e.target.value)}
+                                                            className={`${selectClass} disabled:opacity-30`}
+                                                        >
+                                                            <option value="">None</option>
+                                                            {allSubcategories
+                                                                .filter(s => s.category_id === edit.categoryId)
+                                                                .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className={labelClass}>Points</label>
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            value={edit.points}
+                                                            onChange={(e) => updateEdit(q.id, 'points', parseInt(e.target.value) || 0)}
+                                                            className="w-full px-3 py-2 bg-white border border-slate-200 text-[9px] font-black text-center outline-none focus:border-brand transition-colors"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Question text */}
+                                                <textarea
+                                                    value={edit.questionText}
+                                                    onChange={(e) => updateEdit(q.id, 'questionText', e.target.value)}
+                                                    rows={2}
+                                                    className="w-full text-sm font-bold text-slate-900 p-4 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none"
+                                                />
+
+                                                {/* Statements */}
+                                                <div className="space-y-2">
+                                                    {edit.statements.map((s: any, sIdx: number) => (
+                                                        <div key={s.id} className="flex gap-3 items-center">
+                                                            <button
+                                                                onClick={() => updateStatement(q.id, sIdx, 'isCorrect', !s.isCorrect)}
+                                                                className={`w-8 h-8 flex items-center justify-center transition-colors shrink-0
+                                                                    ${s.isCorrect ? 'text-emerald-500 bg-emerald-50' : 'text-red-400 bg-red-50'}`}
+                                                            >
+                                                                {s.isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                                            </button>
+                                                            <input
+                                                                value={s.text}
+                                                                onChange={(e) => updateStatement(q.id, sIdx, 'text', e.target.value)}
+                                                                className="flex-1 px-4 py-2 bg-white border border-slate-100 text-sm outline-none focus:border-brand transition-colors"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex justify-end">
+                                                    <button
+                                                        onClick={() => handleSave(q.id)}
+                                                        disabled={savingId === q.id}
+                                                        className="flex items-center gap-2 px-8 py-3 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors disabled:opacity-40"
+                                                    >
+                                                        {savingId === q.id ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                                        Save Changes
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        );
+                    })
+                )}
             </div>
         </div>
     );
