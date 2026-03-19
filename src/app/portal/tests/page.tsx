@@ -24,7 +24,7 @@ export default function TestLibrary() {
                         {/* 2. Change <button> to <Link> and add the href */}
                         <Link
                             href={`/portal/tests/take/${test.id}`}
-                            className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold flex justify-center items-center gap-2 group-hover:bg-blue-900 transition-colors"
+                            className="w-full py-3 bg-slate-900 text-white rounded-xl font-semibold flex justify-center items-center gap-2 group-hover:bg-brand transition-colors"
                         >
                             Start Test <ArrowRight size={18} />
                         </Link>

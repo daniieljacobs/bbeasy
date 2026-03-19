@@ -40,7 +40,7 @@ export default function OnboardingPage() {
     ];
 
     return (
-        <div className="h-screen flex items-center justify-center font-mono selection:bg-blue-900 selection:text-white overflow-hidden">
+        <div className="h-screen flex items-center justify-center font-mono selection:bg-brand selection:text-white overflow-hidden">
             <AnimatePresence mode="wait">
                 {stage === 'welcome' ? (
                     <motion.div
@@ -85,12 +85,12 @@ export default function OnboardingPage() {
                                     }}
                                     className={`relative p-10 rounded-[2.5rem] border flex flex-col
                                         ${tier.featured
-                                            ? 'border-blue-900/25 bg-[#F0F4FF] backdrop-blur-2xl shadow-2xl shadow-blue-900/10'
+                                            ? 'border-brand/25 bg-[#F0F4FF] backdrop-blur-2xl shadow-2xl shadow-brand/10'
                                             : 'border-white/60 bg-white/40 backdrop-blur-2xl shadow-xl shadow-black/5'
                                         }`}
                                 >
                                     <div className="mb-10">
-                                        <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-2 ${tier.featured ? 'text-blue-900' : 'text-slate-400'}`}>
+                                        <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-2 ${tier.featured ? 'text-brand' : 'text-slate-400'}`}>
                                             {tier.name}
                                         </h3>
                                         <div className="text-4xl font-bold text-slate-800 tracking-tighter">
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
                                     <ul className="space-y-5 flex-grow mb-8">
                                         {tier.features.map(f => (
                                             <li key={f} className="text-xs text-slate-500 flex items-center gap-3">
-                                                <div className={`w-1 h-1 rounded-full shrink-0 ${tier.featured ? 'bg-blue-900/30' : 'bg-slate-300'}`} />
+                                                <div className={`w-1 h-1 rounded-full shrink-0 ${tier.featured ? 'bg-brand/30' : 'bg-slate-300'}`} />
                                                 {f}
                                             </li>
                                         ))}
@@ -111,7 +111,7 @@ export default function OnboardingPage() {
                                         href={tier.href}
                                         className={`block w-full py-4 text-[11px] font-bold text-center rounded-2xl transition-all tracking-wide
                                             ${tier.featured
-                                                ? 'bg-blue-900 text-white hover:bg-slate-900 duration-300'
+                                                ? 'bg-brand text-white hover:bg-slate-900 duration-300'
                                                 : 'bg-slate-900/[0.05] text-slate-600 hover:bg-slate-900 duration-300 hover:text-white'
                                             }`}
                                     >

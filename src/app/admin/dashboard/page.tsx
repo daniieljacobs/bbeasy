@@ -102,7 +102,7 @@ export default function AdminDashboardPage() {
             {/* Stats Row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Users', value: stats.totalUsers, icon: <Users size={18} />, color: 'text-blue-600 bg-blue-50' },
+                    { label: 'Total Users', value: stats.totalUsers, icon: <Users size={18} />, color: 'text-brand bg-brand-tint' },
                     { label: 'Tests Taken', value: stats.totalTests, icon: <FileText size={18} />, color: 'text-purple-600 bg-purple-50' },
                     { label: 'Avg. Score', value: `${stats.avgScore}%`, icon: <Target size={18} />, color: 'text-green-600 bg-green-50' },
                     { label: 'Points Awarded', value: stats.totalPoints, icon: <Zap size={18} />, color: 'text-amber-600 bg-amber-50' },
@@ -137,7 +137,7 @@ export default function AdminDashboardPage() {
                                     <p className="text-[10px] font-black text-slate-400 w-16 shrink-0">{d.range}</p>
                                     <div className="flex-1 bg-slate-50 rounded-full h-3 overflow-hidden">
                                         <div
-                                            className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                                            className="h-full bg-brand rounded-full transition-all duration-500"
                                             style={{ width: `${(d.count / maxCount) * 100}%` }}
                                         />
                                     </div>
@@ -167,7 +167,7 @@ export default function AdminDashboardPage() {
                                 return (
                                     <div key={r.id} className="flex items-center justify-between gap-4">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center font-black text-xs shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-brand-tint text-brand flex items-center justify-center font-black text-xs shrink-0">
                                                 {(r.profiles?.full_name || '?').charAt(0)}
                                             </div>
                                             <div className="min-w-0">

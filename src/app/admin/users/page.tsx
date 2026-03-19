@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
     const roleConfig: Record<string, { label: string; color: string; icon: any }> = {
         free: { label: 'Free', color: 'bg-slate-100 text-slate-600', icon: User },
         pro: { label: 'Pro', color: 'bg-amber-100 text-amber-700', icon: Crown },
-        admin: { label: 'Admin', color: 'bg-blue-100 text-blue-700', icon: Shield },
+        admin: { label: 'Admin', color: 'bg-blue-100 text-brand-hover', icon: Shield },
     };
 
     const filteredUsers = users.filter(u =>
@@ -124,7 +124,7 @@ export default function AdminUsersPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search by name, username or email..."
-                    className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-tint0 transition"
                 />
                 {search && (
                     <button
@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
                             <div className="px-8 py-6 flex items-center gap-6">
 
                                 {/* Avatar */}
-                                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center font-black text-sm shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-brand-tint text-brand flex items-center justify-center font-black text-sm shrink-0">
                                     {user.full_name?.charAt(0) || '?'}
                                 </div>
 
@@ -202,7 +202,7 @@ export default function AdminUsersPage() {
                                 <div className="flex items-center gap-2 shrink-0">
                                     <button
                                         onClick={() => toggleExpand(user.id)}
-                                        className="p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-blue-600 transition"
+                                        className="p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-brand transition"
                                     >
                                         {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                                     </button>

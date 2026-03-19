@@ -105,7 +105,7 @@ export default function UserDashboard() {
 
             {/* Assessment Banner */}
             {!assessmentTaken && assessmentId && (
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-blue-900 text-white rounded-[2rem] px-10 py-8">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-brand text-white rounded-[2rem] px-10 py-8">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
                             <AlertCircle size={24} />
@@ -117,7 +117,7 @@ export default function UserDashboard() {
                     </div>
                     <Link
                         href={`/portal/tests/take/${assessmentId}`}
-                        className="flex items-center gap-2 px-8 py-4 bg-white text-blue-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-50 transition-all shrink-0"
+                        className="flex items-center gap-2 px-8 py-4 bg-white text-brand text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-brand-tint transition-all shrink-0"
                     >
                         Take Assessment <ChevronRight size={14} />
                     </Link>
@@ -127,8 +127,8 @@ export default function UserDashboard() {
             {/* Progress Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center gap-4 px-6 py-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                        <Target size={18} className="text-blue-900" />
+                    <div className="w-10 h-10 bg-brand-tint rounded-xl flex items-center justify-center">
+                        <Target size={18} className="text-brand" />
                     </div>
                     <div>
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Avg. Score</p>
@@ -136,8 +136,8 @@ export default function UserDashboard() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4 px-6 py-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                        <CheckCircle size={18} className="text-blue-900" />
+                    <div className="w-10 h-10 bg-brand-tint rounded-xl flex items-center justify-center">
+                        <CheckCircle size={18} className="text-brand" />
                     </div>
                     <div>
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Tests Completed</p>
@@ -145,8 +145,8 @@ export default function UserDashboard() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4 px-6 py-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                        <Zap size={18} className="text-blue-900" />
+                    <div className="w-10 h-10 bg-brand-tint rounded-xl flex items-center justify-center">
+                        <Zap size={18} className="text-brand" />
                     </div>
                     <div>
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Prep Points</p>
@@ -193,7 +193,7 @@ function TestCard({ test }: { test: any }) {
     return (
         <div className="group bg-white rounded-[2rem] border border-slate-100 p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
             <div className="flex justify-between items-start mb-6">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${test.completed ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-900'}`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${test.completed ? 'bg-green-50 text-green-600' : 'bg-brand-tint text-brand'}`}>
                     {test.completed ? <CheckCircle size={24} /> : <BookOpen size={24} />}
                 </div>
                 {test.completed && (
@@ -204,7 +204,7 @@ function TestCard({ test }: { test: any }) {
                 )}
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 mb-1 leading-tight group-hover:text-blue-900 transition-colors">
+            <h3 className="text-lg font-black text-slate-900 mb-1 leading-tight group-hover:text-brand transition-colors">
                 {test.title}
             </h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">
@@ -214,7 +214,7 @@ function TestCard({ test }: { test: any }) {
             <div className="mt-auto">
                 <Link
                     href={`/portal/tests/take/${test.id}`}
-                    className="flex items-center justify-center gap-2 w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-900 transition-all"
+                    className="flex items-center justify-center gap-2 w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-brand transition-all"
                 >
                     {test.completed ? 'Retake' : 'Start'}
                     <ChevronRight size={14} />

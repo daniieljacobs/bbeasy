@@ -240,7 +240,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Full BBE Simulation 2026"
-                            className="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-blue-600 outline-none pb-2 transition"
+                            className="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 focus:border-brand outline-none pb-2 transition"
                         />
                     </div>
 
@@ -289,7 +289,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="flex items-center gap-2 px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-100"
+                            className="flex items-center gap-2 px-10 py-4 bg-brand text-white rounded-2xl font-bold hover:bg-brand-hover transition shadow-xl shadow-blue-100"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                             Save Test
@@ -307,7 +307,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                 {/* Questions */}
                 <div className="space-y-6">
                     {questions.map((q, qIdx) => (
-                        <div key={qIdx} className={`bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden border-t-8 ${q.isFromBank ? 'border-t-green-400' : 'border-t-blue-500'}`}>
+                        <div key={qIdx} className={`bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden border-t-8 ${q.isFromBank ? 'border-t-green-400' : 'border-t-brand-tint0'}`}>
 
                             {/* Badge for bank questions */}
                             {q.isFromBank && (
@@ -324,7 +324,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="text-[9px] font-black uppercase text-slate-400">Category</label>
                                         {!q.isFromBank && (
-                                            <button onClick={() => handleCreateCategory(qIdx)} className="text-[9px] font-bold text-blue-600 hover:underline flex items-center gap-0.5">
+                                            <button onClick={() => handleCreateCategory(qIdx)} className="text-[9px] font-bold text-brand hover:underline flex items-center gap-0.5">
                                                 <PlusCircle size={10} /> NEW
                                             </button>
                                         )}
@@ -347,7 +347,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                                             <button
                                                 onClick={() => handleCreateSubcategory(qIdx)}
                                                 disabled={!q.categoryId}
-                                                className="text-[9px] font-bold text-blue-600 hover:underline flex items-center gap-0.5 disabled:text-slate-300"
+                                                className="text-[9px] font-bold text-brand hover:underline flex items-center gap-0.5 disabled:text-slate-300"
                                             >
                                                 <PlusCircle size={10} /> NEW
                                             </button>
@@ -383,7 +383,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                                     disabled={q.isFromBank}
                                     onChange={(e) => updateQuestionField(qIdx, 'questionText', e.target.value)}
                                     placeholder="Enter the question stem..."
-                                    className="w-full text-lg font-bold p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 ring-blue-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="w-full text-lg font-bold p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 ring-brand-tint transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                                 />
 
                                 <div className="space-y-3">
@@ -433,7 +433,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
 
                     <button
                         onClick={addQuestion}
-                        className="w-full py-12 border-4 border-dashed border-slate-100 rounded-[3rem] flex flex-col items-center justify-center text-slate-300 hover:text-blue-500 hover:bg-blue-50/20 transition-all group"
+                        className="w-full py-12 border-4 border-dashed border-slate-100 rounded-[3rem] flex flex-col items-center justify-center text-slate-300 hover:text-brand-tint0 hover:bg-brand-tint/20 transition-all group"
                     >
                         <Plus size={32} className="mb-2 group-hover:scale-110 transition" />
                         <span className="font-black uppercase tracking-widest text-xs">New Question</span>
@@ -520,7 +520,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                                     <div className="flex items-center justify-between mt-3">
                                         <div className="flex items-center gap-2">
                                             {category && (
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-brand bg-brand-tint px-2 py-0.5 rounded-full">
                                                     {category.name}
                                                 </span>
                                             )}
@@ -531,7 +531,7 @@ export default function TestEditor({ initialData, testId }: { initialData?: any,
                                         <button
                                             disabled={alreadyAdded}
                                             onClick={() => addFromBank(bq)}
-                                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase rounded-xl hover:bg-blue-700 transition disabled:opacity-0"
+                                            className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-[9px] font-black uppercase rounded-xl hover:bg-brand-hover transition disabled:opacity-0"
                                         >
                                             Add <ChevronRight size={10} />
                                         </button>

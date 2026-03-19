@@ -54,7 +54,7 @@ export default function AdminTestsPage() {
                 </div>
                 <Link
                     href="/admin/tests/new"
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition"
+                    className="flex items-center gap-2 px-6 py-3 bg-brand text-white rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-brand-hover transition"
                 >
                     <Plus size={18} /> Create New Test
                 </Link>
@@ -89,8 +89,8 @@ export default function AdminTestsPage() {
                                     </td>
                                     <td className="px-8 py-5">
                                         <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${test.type === 'assessment' ? 'bg-purple-100 text-purple-700' :
-                                                test.type === 'subset' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-slate-100 text-slate-700'
+                                            test.type === 'subset' ? 'bg-blue-100 text-brand-hover' :
+                                                'bg-slate-100 text-slate-700'
                                             }`}>
                                             {test.type || 'mock'}
                                         </span>
@@ -107,8 +107,8 @@ export default function AdminTestsPage() {
                                     </td>
                                     <td className="px-8 py-5">
                                         <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${test.min_role === 'pro' ? 'bg-amber-100 text-amber-700' :
-                                                test.min_role === 'admin' ? 'bg-red-100 text-red-700' :
-                                                    'bg-green-100 text-green-700'
+                                            test.min_role === 'admin' ? 'bg-red-100 text-red-700' :
+                                                'bg-green-100 text-green-700'
                                             }`}>
                                             {test.min_role === 'new' ? 'Free' : test.min_role}
                                         </span>
@@ -116,7 +116,7 @@ export default function AdminTestsPage() {
                                     <td className="px-8 py-5 text-right space-x-2">
                                         <button
                                             onClick={() => router.push(`/admin/tests/${test.id}/edit`)}
-                                            className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-blue-600 transition"
+                                            className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-brand transition"
                                         >
                                             <Edit3 size={18} />
                                         </button>

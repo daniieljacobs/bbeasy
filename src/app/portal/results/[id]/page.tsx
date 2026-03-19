@@ -84,14 +84,14 @@ export default async function ResultsPage({ params }: PageProps) {
             </div>
 
             {/* Score Card */}
-            <div className={`rounded-[2.5rem] p-10 text-center border ${passed ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+            <div className={`rounded-[2.5rem] p-10 text-center border ${passed ? 'bg-brand-tint border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">
                     {(result.tests as any)?.title}
                 </p>
-                <div className={`text-8xl font-black mb-4 ${passed ? 'text-blue-900' : 'text-slate-400'}`}>
+                <div className={`text-8xl font-black mb-4 ${passed ? 'text-brand' : 'text-slate-400'}`}>
                     {result.score}%
                 </div>
-                <p className={`text-sm font-bold uppercase tracking-widest ${passed ? 'text-blue-600' : 'text-slate-400'}`}>
+                <p className={`text-sm font-bold uppercase tracking-widest ${passed ? 'text-brand' : 'text-slate-400'}`}>
                     {passed ? 'Well done' : 'Keep practicing'}
                 </p>
 
@@ -157,13 +157,13 @@ export default async function ResultsPage({ params }: PageProps) {
             <div className="flex gap-4 justify-center pt-4">
                 <Link
                     href="/portal/dashboard"
-                    className="px-8 py-4 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-900 transition-all shadow-lg"
+                    className="px-8 py-4 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-brand transition-all shadow-lg"
                 >
                     Back to Dashboard
                 </Link>
                 <Link
                     href={`/portal/tests/take/${result.test_id}`}
-                    className="px-8 py-4 bg-white border border-slate-200 text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:border-blue-900 hover:text-blue-900 transition-all"
+                    className="px-8 py-4 bg-white border border-slate-200 text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:border-brand hover:text-brand transition-all"
                 >
                     Retake Test
                 </Link>

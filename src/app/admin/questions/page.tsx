@@ -236,7 +236,7 @@ export default function QuestionBankPage() {
                 </div>
                 <button
                     onClick={() => { setShowNewForm(!showNewForm); resetNewForm(); }}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition ${showNewForm ? 'bg-slate-100 text-slate-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-100 hover:bg-blue-700'}`}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition ${showNewForm ? 'bg-slate-100 text-slate-600' : 'bg-brand text-white shadow-lg shadow-blue-100 hover:bg-brand-hover'}`}
                 >
                     {showNewForm ? <><X size={18} /> Cancel</> : <><Plus size={18} /> New Question</>}
                 </button>
@@ -244,12 +244,12 @@ export default function QuestionBankPage() {
 
             {/* New Question Form */}
             {showNewForm && (
-                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden border-t-8 border-t-blue-500">
+                <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden border-t-8 border-t-brand-tint0">
                     <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 grid md:grid-cols-3 gap-6 items-center">
                         <div>
                             <div className="flex justify-between items-center mb-1">
                                 <label className="text-[9px] font-black uppercase text-slate-400">Category</label>
-                                <button onClick={handleCreateCategory} className="text-[9px] font-bold text-blue-600 hover:underline flex items-center gap-0.5">
+                                <button onClick={handleCreateCategory} className="text-[9px] font-bold text-brand hover:underline flex items-center gap-0.5">
                                     <PlusCircle size={10} /> NEW
                                 </button>
                             </div>
@@ -269,7 +269,7 @@ export default function QuestionBankPage() {
                                 <button
                                     onClick={handleCreateSubcategory}
                                     disabled={!newQuestion.categoryId}
-                                    className="text-[9px] font-bold text-blue-600 hover:underline flex items-center gap-0.5 disabled:text-slate-300"
+                                    className="text-[9px] font-bold text-brand hover:underline flex items-center gap-0.5 disabled:text-slate-300"
                                 >
                                     <PlusCircle size={10} /> NEW
                                 </button>
@@ -288,7 +288,7 @@ export default function QuestionBankPage() {
                         </div>
 
                         <div className="flex justify-end pt-4">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-brand bg-brand-tint px-3 py-1 rounded-full">
                                 New Question
                             </span>
                         </div>
@@ -300,7 +300,7 @@ export default function QuestionBankPage() {
                             onChange={(e) => setNewQuestion(prev => ({ ...prev, questionText: e.target.value }))}
                             placeholder="Enter the question stem..."
                             rows={3}
-                            className="w-full text-lg font-bold p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 ring-blue-50 transition-all"
+                            className="w-full text-lg font-bold p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 ring-brand-tint transition-all"
                         />
 
                         <div className="space-y-3">
@@ -358,7 +358,7 @@ export default function QuestionBankPage() {
                             <button
                                 onClick={handleSaveNew}
                                 disabled={isSavingNew}
-                                className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+                                className="flex items-center gap-2 px-8 py-3 bg-brand text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-brand-hover transition disabled:opacity-50"
                             >
                                 {isSavingNew ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                 Save to Bank
@@ -421,7 +421,7 @@ export default function QuestionBankPage() {
                                     <p className="font-bold text-slate-900 truncate">{q.question_text}</p>
                                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                                         {category && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand bg-brand-tint px-2 py-0.5 rounded-full">
                                                 {category.name}
                                             </span>
                                         )}
@@ -445,7 +445,7 @@ export default function QuestionBankPage() {
                                 <div className="flex items-center gap-2 shrink-0">
                                     <button
                                         onClick={() => setExpandedId(isExpanded ? null : q.id)}
-                                        className="p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-blue-600 transition"
+                                        className="p-2 hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-brand transition"
                                     >
                                         {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                                     </button>
@@ -521,7 +521,7 @@ export default function QuestionBankPage() {
                                         <button
                                             onClick={() => handleSave(q.id)}
                                             disabled={savingId === q.id}
-                                            className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+                                            className="flex items-center gap-2 px-8 py-3 bg-brand text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-brand-hover transition disabled:opacity-50"
                                         >
                                             {savingId === q.id ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                             Save Changes

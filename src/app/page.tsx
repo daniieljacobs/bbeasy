@@ -20,7 +20,7 @@ export default function LandingPage() {
       desc: "Realistic multi-statement questions matching the exact WU BBE style."
     },
     {
-      icon: <BarChart3 size={20} className="text-blue-600" />,
+      icon: <BarChart3 size={20} className="text-brand" />,
       title: "Detailed Analytics",
       desc: "Track weak spots across Economics, Math, and English over time."
     },
@@ -37,7 +37,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col items-center justify-center font-mono selection:bg-blue-900 selection:text-white px-6">
+    <div className="h-screen overflow-hidden flex flex-col items-center justify-center font-mono selection:bg-brand selection:text-white px-6">
 
       {/* Top nav */}
       <motion.div
@@ -47,7 +47,7 @@ export default function LandingPage() {
         className="absolute top-0 left-0 right-0 flex items-center justify-between px-10 py-6"
       >
         <span className="font-black text-lg tracking-tight">
-          BB<span className="text-blue-600">EASY</span>
+          BB<span className="text-brand">EASY</span>
         </span>
         <div className="flex items-center gap-3">
           <Link
@@ -58,7 +58,7 @@ export default function LandingPage() {
           </Link>
           <Link
             href="/auth/register"
-            className="px-5 py-2 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-blue-600 transition"
+            className="px-5 py-2 bg-slate-900 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-brand transition"
           >
             register
           </Link>
@@ -72,12 +72,12 @@ export default function LandingPage() {
           animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : 20 }}
           transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-bold uppercase tracking-widest mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-tint border border-blue-100 text-brand text-[10px] font-bold uppercase tracking-widest mb-8">
             <GraduationCap size={12} /> 2026 BBE Admission Prep
           </div>
           <h1 className="text-6xl font-black tracking-tighter text-slate-900 leading-[1.05] mb-6">
             Stop guessing.<br />
-            <span className="text-blue-600">Start scoring.</span>
+            <span className="text-brand">Start scoring.</span>
           </h1>
           <p className="text-base text-slate-500 leading-relaxed max-w-xl mx-auto">
             The only platform built specifically for the WU Wien BBE entrance exam.
@@ -93,7 +93,7 @@ export default function LandingPage() {
         >
           <Link
             href="/auth/register"
-            className="flex items-center gap-2 px-8 py-4 bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 transition shadow-xl shadow-blue-200"
+            className="flex items-center gap-2 px-8 py-4 bg-brand text-white text-xs font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-900 transition shadow-xl shadow-blue-200"
           >
             Get started free <ArrowRight size={14} />
           </Link>

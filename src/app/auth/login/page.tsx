@@ -58,7 +58,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="alex@wu.ac.at"
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-tint0 outline-none transition"
                     />
                 </div>
                 <div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-tint0 outline-none transition"
                     />
                 </div>
             </div>
@@ -77,14 +77,14 @@ export default function LoginPage() {
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition duration-300 disabled:opacity-50"
+                className="w-full py-4 bg-brand text-white rounded-2xl font-bold hover:bg-brand-hover shadow-lg shadow-blue-100 transition duration-300 disabled:opacity-50"
             >
                 {loading ? 'Signing in...' : 'Sign In'}
             </button>
 
             <p className="text-center text-sm text-slate-500">
                 Don't have an account?{' '}
-                <Link href="/auth/register" className="text-blue-600 font-bold hover:underline">Register</Link>
+                <Link href="/auth/register" className="text-brand font-bold hover:underline">Register</Link>
             </p>
         </form>
     );
