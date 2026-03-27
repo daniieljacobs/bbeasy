@@ -5,6 +5,7 @@ import { ChevronRight, ChevronLeft, Loader2, Timer, Brain, Shield } from 'lucide
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
+import MathText from '@/components/MathText';
 
 // ─── GET READY SCREEN ───────────────────────────────────────────────────────
 
@@ -358,8 +359,27 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                             {currentQ.statements.length} statements · {currentQ.points ?? currentQ.statements.length - 1} pts
                         </span>
                     </div>
+
+                    {/* Context — text */}
+                    {currentQ.contextText && (
+                        <div className="mb-4 p-4 bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                            <MathText text={currentQ.contextText} />
+                        </div>
+                    )}
+
+                    {/* Context — image */}
+                    {currentQ.contextImageUrl && (
+                        <div className="mb-4">
+                            <img
+                                src={currentQ.contextImageUrl}
+                                alt="Question context"
+                                className="max-h-64 object-contain border border-slate-100"
+                            />
+                        </div>
+                    )}
+
                     <h2 className="text-lg font-black text-slate-900 leading-snug">
-                        {currentQ.questionText}
+                        <MathText text={currentQ.questionText} />
                     </h2>
                 </div>
 
@@ -368,7 +388,9 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                         const selected = answers[currentQ.id]?.[s.id];
                         return (
                             <div key={s.id} className="flex flex-col md:flex-row md:items-center justify-between px-8 py-5 hover:bg-slate-50/50 transition-colors">
-                                <p className="text-sm text-slate-600 leading-relaxed mb-4 md:mb-0 md:pr-8 italic">{s.text}</p>
+                                <p className="text-sm text-slate-600 leading-relaxed mb-4 md:mb-0 md:pr-8 italic">
+                                    <MathText text={s.text} />
+                                </p>
                                 <div className="flex gap-2 shrink-0">
                                     {['True', 'False'].map((val) => (
                                         <button

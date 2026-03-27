@@ -20,6 +20,8 @@ export default async function TakeTestPage({ params }: PageProps) {
                 questions (
                     id,
                     question_text,
+                    context_text,
+                    context_image_url,
                     points,
                     category_id,
                     subcategory_id,
@@ -45,6 +47,8 @@ export default async function TakeTestPage({ params }: PageProps) {
             id: tq.questions.id,
             topic: "Assessment Section",
             questionText: tq.questions.question_text,
+            contextText: tq.questions.context_text || null,
+            contextImageUrl: tq.questions.context_image_url || null,
             points: tq.questions.points,
             statements: tq.questions.question_items.map((item: any) => ({
                 id: item.id,

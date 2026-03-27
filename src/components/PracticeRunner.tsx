@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, ChevronRight, Timer, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import MathText from '@/components/MathText';
 
 interface Statement {
     id: string;
@@ -182,8 +183,27 @@ export default function PracticeRunner({
                                 {currentQ.statements.length} statements
                             </span>
                         </div>
+
+                        {/* Context — text */}
+                        {currentQ.contextText && (
+                            <div className="mb-4 p-4 bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                                <MathText text={currentQ.contextText} />
+                            </div>
+                        )}
+
+                        {/* Context — image */}
+                        {currentQ.contextImageUrl && (
+                            <div className="mb-4">
+                                <img
+                                    src={currentQ.contextImageUrl}
+                                    alt="Question context"
+                                    className="max-h-64 object-contain border border-slate-100"
+                                />
+                            </div>
+                        )}
+
                         <h2 className="text-lg font-black text-slate-900 leading-snug">
-                            {currentQ.questionText}
+                            <MathText text={currentQ.questionText} />
                         </h2>
                     </div>
 
@@ -203,7 +223,9 @@ export default function PracticeRunner({
                                         }`}
                                 >
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <p className="text-sm text-slate-600 leading-relaxed italic flex-1">{s.text}</p>
+                                        <p className="text-sm text-slate-600 leading-relaxed italic flex-1">
+                                            <MathText text={s.text} />
+                                        </p>
 
                                         <div className="flex items-center gap-3 shrink-0">
                                             {/* True/False buttons */}

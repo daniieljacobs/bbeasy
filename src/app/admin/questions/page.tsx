@@ -16,6 +16,8 @@ interface NewQuestion {
     subcategoryId: string;
     questionText: string;
     points: number;
+    contextText: string;
+    contextImageUrl: string;
     statements: Statement[];
 }
 
@@ -31,8 +33,10 @@ export default function QuestionBankPage() {
     const [editState, setEditState] = useState<Record<string, any>>({});
     const [showNewForm, setShowNewForm] = useState(false);
     const [isSavingNew, setIsSavingNew] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [newQuestion, setNewQuestion] = useState<NewQuestion>({
         categoryId: '', subcategoryId: '', questionText: '', points: 0,
+        contextText: '', contextImageUrl: '',
         statements: [{ id: crypto.randomUUID(), text: '', isCorrect: true }]
     });
 
@@ -43,7 +47,7 @@ export default function QuestionBankPage() {
         const { data: subs } = await supabase.from('subcategories').select('*').order('name');
         const { data: qs } = await supabase
             .from('questions')
-            .select(`id, question_text, category_id, subcategory_id, points,
+            .select(`id, question_text, category_id, subcategory_id, points, context_text, context_image_url,
                 question_items (id, item_text, is_correct),
                 test_questions (tests (id, title))`)
             .order('created_at', { ascending: false });
@@ -59,6 +63,8 @@ export default function QuestionBankPage() {
                     categoryId: q.category_id || "",
                     subcategoryId: q.subcategory_id || "",
                     points: q.points ?? (q.question_items.length - 1),
+                    contextText: q.context_text || "",
+                    contextImageUrl: q.context_image_url || "",
                     statements: q.question_items.map((item: any) => ({
                         id: item.id, text: item.item_text, isCorrect: item.is_correct
                     }))
@@ -72,8 +78,23 @@ export default function QuestionBankPage() {
     function resetNewForm() {
         setNewQuestion({
             categoryId: '', subcategoryId: '', questionText: '', points: 0,
+            contextText: '', contextImageUrl: '',
             statements: [{ id: crypto.randomUUID(), text: '', isCorrect: true }]
         });
+    }
+
+    async function handleImageUpload(file: File, onUrl: (url: string) => void) {
+        setUploadingImage(true);
+        try {
+            const ext = file.name.split('.').pop();
+            const path = `question-context/${crypto.randomUUID()}.${ext}`;
+            const { error } = await supabase.storage.from('question-images').upload(path, file);
+            if (error) { alert('Upload failed: ' + error.message); return; }
+            const { data } = supabase.storage.from('question-images').getPublicUrl(path);
+            onUrl(data.publicUrl);
+        } finally {
+            setUploadingImage(false);
+        }
     }
 
     async function handleCreateCategory() {
@@ -105,8 +126,12 @@ export default function QuestionBankPage() {
             const { data: qData, error: qErr } = await supabase
                 .from('questions')
                 .insert({
-                    category_id: newQuestion.categoryId || null, subcategory_id: newQuestion.subcategoryId || null,
-                    question_text: newQuestion.questionText, points
+                    category_id: newQuestion.categoryId || null,
+                    subcategory_id: newQuestion.subcategoryId || null,
+                    question_text: newQuestion.questionText,
+                    points,
+                    context_text: newQuestion.contextText || null,
+                    context_image_url: newQuestion.contextImageUrl || null,
                 })
                 .select().single();
             if (qErr) { alert("Error: " + qErr.message); return; }
@@ -149,7 +174,9 @@ export default function QuestionBankPage() {
             question_text: edit.questionText,
             category_id: edit.categoryId || null,
             subcategory_id: edit.subcategoryId || null,
-            points: edit.points
+            points: edit.points,
+            context_text: edit.contextText || null,
+            context_image_url: edit.contextImageUrl || null,
         }).eq('id', qId);
         for (const s of edit.statements) {
             await supabase.from('question_items')
@@ -286,6 +313,45 @@ export default function QuestionBankPage() {
                                 rows={2}
                                 className="w-full text-sm font-bold text-slate-900 p-4 bg-slate-50 border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
                             />
+
+                            {/* Context fields */}
+                            <div className="border border-dashed border-slate-200 p-4 space-y-3">
+                                <p className={labelClass}>Context (optional) — shown above question</p>
+                                <textarea
+                                    value={newQuestion.contextText}
+                                    onChange={(e) => setNewQuestion(prev => ({ ...prev, contextText: e.target.value }))}
+                                    placeholder="Paste text context here (supports $LaTeX$ inline and $$block$$)..."
+                                    rows={3}
+                                    className="w-full text-xs text-slate-700 p-3 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
+                                />
+                                <div className="flex items-center gap-3">
+                                    {newQuestion.contextImageUrl ? (
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <img src={newQuestion.contextImageUrl} alt="context" className="h-12 object-contain border border-slate-100" />
+                                            <button
+                                                onClick={() => setNewQuestion(prev => ({ ...prev, contextImageUrl: '' }))}
+                                                className="text-[9px] uppercase tracking-[0.2em] text-red-400 font-black"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="flex items-center gap-2 cursor-pointer text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand transition-colors">
+                                            <Plus size={11} />
+                                            {uploadingImage ? 'Uploading...' : 'Add Image'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(file, url => setNewQuestion(prev => ({ ...prev, contextImageUrl: url })));
+                                                }}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
 
                             <div className="space-y-2">
                                 {newQuestion.statements.map((s, sIdx) => (
@@ -513,6 +579,45 @@ export default function QuestionBankPage() {
                                                     rows={2}
                                                     className="w-full text-sm font-bold text-slate-900 p-4 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none"
                                                 />
+
+                                                {/* Context fields */}
+                                                <div className="border border-dashed border-slate-200 p-4 space-y-3">
+                                                    <p className={labelClass}>Context (optional)</p>
+                                                    <textarea
+                                                        value={edit.contextText || ''}
+                                                        onChange={(e) => updateEdit(q.id, 'contextText', e.target.value)}
+                                                        placeholder="Text context (supports $LaTeX$)..."
+                                                        rows={2}
+                                                        className="w-full text-xs text-slate-700 p-3 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
+                                                    />
+                                                    <div className="flex items-center gap-3">
+                                                        {edit.contextImageUrl ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <img src={edit.contextImageUrl} alt="context" className="h-12 object-contain border border-slate-100" />
+                                                                <button
+                                                                    onClick={() => updateEdit(q.id, 'contextImageUrl', '')}
+                                                                    className="text-[9px] uppercase tracking-[0.2em] text-red-400 font-black"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <label className="flex items-center gap-2 cursor-pointer text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand transition-colors">
+                                                                <Plus size={11} />
+                                                                {uploadingImage ? 'Uploading...' : 'Add Image'}
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    className="hidden"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) handleImageUpload(file, url => updateEdit(q.id, 'contextImageUrl', url));
+                                                                    }}
+                                                                />
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                </div>
 
                                                 {/* Statements */}
                                                 <div className="space-y-2">
