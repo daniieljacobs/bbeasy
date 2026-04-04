@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Trash2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Save, Loader2, PlusCircle, Plus, X } from 'lucide-react';
+import { Trash2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Save, Loader2, PlusCircle, Plus, X, Sparkles, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import MathText from '@/components/MathText';
 
 interface Statement {
     id: string;
@@ -21,6 +22,23 @@ interface NewQuestion {
     statements: Statement[];
 }
 
+const generateId = () => crypto.randomUUID();
+
+const emptyStatements = (): Statement[] => [
+    { id: generateId(), text: '', isCorrect: true }
+];
+
+const emptyQuestion = (): NewQuestion => ({
+    categoryId: '', subcategoryId: '', questionText: '', points: 0,
+    contextText: '', contextImageUrl: '',
+    statements: emptyStatements()
+});
+
+const DEFAULT_PROMPT = `Generate a challenging but fair exam question suitable for university entrance level.
+The question should test understanding of core concepts in the given category and subcategory.
+Statements should be precise, unambiguous, and require genuine knowledge to evaluate correctly.
+Mix true and false statements. Avoid trick questions — difficulty should come from depth of knowledge required.`;
+
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
@@ -34,11 +52,14 @@ export default function QuestionBankPage() {
     const [showNewForm, setShowNewForm] = useState(false);
     const [isSavingNew, setIsSavingNew] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
-    const [newQuestion, setNewQuestion] = useState<NewQuestion>({
-        categoryId: '', subcategoryId: '', questionText: '', points: 0,
-        contextText: '', contextImageUrl: '',
-        statements: [{ id: crypto.randomUUID(), text: '', isCorrect: true }]
-    });
+    const [newQuestion, setNewQuestion] = useState<NewQuestion>(emptyQuestion);
+
+    // AI generation state
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [showGenConfig, setShowGenConfig] = useState(false);
+    const [genPrompt, setGenPrompt] = useState(DEFAULT_PROMPT);
+    const [genExtraContext, setGenExtraContext] = useState('');
+    const [genError, setGenError] = useState('');
 
     useEffect(() => { fetchAll(); }, []);
 
@@ -76,18 +97,63 @@ export default function QuestionBankPage() {
     }
 
     function resetNewForm() {
-        setNewQuestion({
-            categoryId: '', subcategoryId: '', questionText: '', points: 0,
-            contextText: '', contextImageUrl: '',
-            statements: [{ id: crypto.randomUUID(), text: '', isCorrect: true }]
-        });
+        setNewQuestion(emptyQuestion());
+        setGenExtraContext('');
+        setGenError('');
+    }
+
+    async function handleGenerate() {
+        if (!newQuestion.categoryId) {
+            setGenError('Select a category first.');
+            return;
+        }
+        setIsGenerating(true);
+        setGenError('');
+
+        const categoryName = categories.find(c => c.id === newQuestion.categoryId)?.name || '';
+        const subcategoryName = allSubcategories.find(s => s.id === newQuestion.subcategoryId)?.name || '';
+
+        try {
+            const res = await fetch('/api/generate-question', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: genPrompt,
+                    categoryName,
+                    subcategoryName,
+                    extraContext: genExtraContext,
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.error) {
+                setGenError(data.error || 'Generation failed.');
+                return;
+            }
+
+            setNewQuestion(prev => ({
+                ...prev,
+                questionText: data.questionText || '',
+                contextText: data.contextText || '',
+                points: data.statements?.length ? data.statements.length - 1 : 0,
+                statements: (data.statements || []).map((s: any) => ({
+                    id: generateId(),
+                    text: s.text,
+                    isCorrect: s.isCorrect,
+                }))
+            }));
+        } catch (err: any) {
+            setGenError(err.message || 'Unexpected error.');
+        } finally {
+            setIsGenerating(false);
+        }
     }
 
     async function handleImageUpload(file: File, onUrl: (url: string) => void) {
         setUploadingImage(true);
         try {
             const ext = file.name.split('.').pop();
-            const path = `question-context/${crypto.randomUUID()}.${ext}`;
+            const path = `question-context/${generateId()}.${ext}`;
             const { error } = await supabase.storage.from('question-images').upload(path, file);
             if (error) { alert('Upload failed: ' + error.message); return; }
             const { data } = supabase.storage.from('question-images').getPublicUrl(path);
@@ -304,15 +370,101 @@ export default function QuestionBankPage() {
                             </div>
                         </div>
 
+                        {/* ── AI GENERATION BAR ── */}
+                        <div className="px-6 py-3 border-b border-slate-100 flex items-center gap-3">
+                            <button
+                                onClick={handleGenerate}
+                                disabled={isGenerating || !newQuestion.categoryId}
+                                className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-violet-700 transition-colors disabled:opacity-40"
+                            >
+                                {isGenerating
+                                    ? <><Loader2 size={11} className="animate-spin" /> Generating...</>
+                                    : <><Sparkles size={11} /> Generate</>
+                                }
+                            </button>
+                            <button
+                                onClick={() => setShowGenConfig(!showGenConfig)}
+                                className={`flex items-center gap-1.5 px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] border transition-colors
+                                    ${showGenConfig ? 'bg-slate-100 text-slate-600 border-slate-200' : 'text-slate-400 border-slate-200 hover:text-brand hover:border-brand'}`}
+                            >
+                                <Settings2 size={11} /> Config
+                            </button>
+                            {!newQuestion.categoryId && (
+                                <span className="text-[9px] uppercase tracking-[0.2em] text-amber-400">Select a category to generate</span>
+                            )}
+                            {genError && (
+                                <span className="text-[9px] uppercase tracking-[0.2em] text-red-400">{genError}</span>
+                            )}
+                            {newQuestion.categoryId && !isGenerating && !genError && (
+                                <span className="text-[9px] uppercase tracking-[0.2em] text-slate-300">
+                                    {categories.find(c => c.id === newQuestion.categoryId)?.name}
+                                    {newQuestion.subcategoryId && ` · ${allSubcategories.find(s => s.id === newQuestion.subcategoryId)?.name}`}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* ── AI CONFIG PANEL ── */}
+                        <AnimatePresence>
+                            {showGenConfig && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden border-b border-slate-100"
+                                >
+                                    <div className="px-6 py-4 bg-violet-50/40 space-y-3">
+                                        <div>
+                                            <label className="text-[8px] font-black uppercase tracking-[0.3em] text-violet-400 mb-1.5 block">
+                                                Generation Prompt
+                                            </label>
+                                            <textarea
+                                                value={genPrompt}
+                                                onChange={(e) => setGenPrompt(e.target.value)}
+                                                rows={4}
+                                                className="w-full text-xs text-slate-700 p-3 bg-white border border-violet-100 outline-none focus:border-violet-400 transition-colors resize-none"
+                                            />
+                                            <button
+                                                onClick={() => setGenPrompt(DEFAULT_PROMPT)}
+                                                className="mt-1 text-[8px] font-black uppercase tracking-[0.2em] text-violet-300 hover:text-violet-500 transition-colors"
+                                            >
+                                                Reset to default
+                                            </button>
+                                        </div>
+                                        <div>
+                                            <label className="text-[8px] font-black uppercase tracking-[0.3em] text-violet-400 mb-1.5 block">
+                                                Extra Context (optional)
+                                            </label>
+                                            <textarea
+                                                value={genExtraContext}
+                                                onChange={(e) => setGenExtraContext(e.target.value)}
+                                                placeholder="Paste source material, topic hints, or specific instructions..."
+                                                rows={3}
+                                                className="w-full text-xs text-slate-700 p-3 bg-white border border-violet-100 outline-none focus:border-violet-400 transition-colors resize-none placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* Form body */}
                         <div className="p-6 space-y-4">
-                            <textarea
-                                value={newQuestion.questionText}
-                                onChange={(e) => setNewQuestion(prev => ({ ...prev, questionText: e.target.value }))}
-                                placeholder="Enter question stem..."
-                                rows={2}
-                                className="w-full text-sm font-bold text-slate-900 p-4 bg-slate-50 border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
-                            />
+                            {/* Question text with MathText preview */}
+                            <div className="space-y-2">
+                                <textarea
+                                    value={newQuestion.questionText}
+                                    onChange={(e) => setNewQuestion(prev => ({ ...prev, questionText: e.target.value }))}
+                                    placeholder="Enter question stem..."
+                                    rows={2}
+                                    className="w-full text-sm font-bold text-slate-900 p-4 bg-slate-50 border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
+                                />
+                                {newQuestion.questionText && (
+                                    <div className="px-4 py-2 bg-white border border-slate-100 text-sm font-bold text-slate-700">
+                                        <MathText text={newQuestion.questionText} />
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Context fields */}
                             <div className="border border-dashed border-slate-200 p-4 space-y-3">
@@ -324,6 +476,11 @@ export default function QuestionBankPage() {
                                     rows={3}
                                     className="w-full text-xs text-slate-700 p-3 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
                                 />
+                                {newQuestion.contextText && (
+                                    <div className="px-3 py-2 bg-white border border-slate-100 text-xs text-slate-600">
+                                        <MathText text={newQuestion.contextText} />
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-3">
                                     {newQuestion.contextImageUrl ? (
                                         <div className="flex items-center gap-2 flex-1">
@@ -355,35 +512,42 @@ export default function QuestionBankPage() {
 
                             <div className="space-y-2">
                                 {newQuestion.statements.map((s, sIdx) => (
-                                    <div key={s.id} className="flex gap-3 items-center">
+                                    <div key={s.id} className="flex gap-3 items-start">
                                         <button
                                             onClick={() => {
                                                 const updated = [...newQuestion.statements];
                                                 updated[sIdx].isCorrect = !updated[sIdx].isCorrect;
                                                 setNewQuestion(prev => ({ ...prev, statements: updated }));
                                             }}
-                                            className={`w-8 h-8 flex items-center justify-center transition-colors shrink-0
+                                            className={`w-8 h-8 flex items-center justify-center transition-colors shrink-0 mt-0.5
                                                 ${s.isCorrect ? 'text-emerald-500 bg-emerald-50' : 'text-red-400 bg-red-50'}`}
                                         >
                                             {s.isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                                         </button>
-                                        <input
-                                            value={s.text}
-                                            onChange={(e) => {
-                                                const updated = [...newQuestion.statements];
-                                                updated[sIdx].text = e.target.value;
-                                                setNewQuestion(prev => ({ ...prev, statements: updated }));
-                                            }}
-                                            placeholder={`Statement ${sIdx + 1}...`}
-                                            className="flex-1 px-4 py-2 bg-white border border-slate-100 text-sm outline-none focus:border-brand transition-colors placeholder:text-slate-300"
-                                        />
+                                        <div className="flex-1 space-y-1">
+                                            <input
+                                                value={s.text}
+                                                onChange={(e) => {
+                                                    const updated = [...newQuestion.statements];
+                                                    updated[sIdx].text = e.target.value;
+                                                    setNewQuestion(prev => ({ ...prev, statements: updated }));
+                                                }}
+                                                placeholder={`Statement ${sIdx + 1}...`}
+                                                className="w-full px-4 py-2 bg-white border border-slate-100 text-sm outline-none focus:border-brand transition-colors placeholder:text-slate-300"
+                                            />
+                                            {s.text && (
+                                                <div className="px-4 py-1 text-xs text-slate-500">
+                                                    <MathText text={s.text} />
+                                                </div>
+                                            )}
+                                        </div>
                                         {newQuestion.statements.length > 1 && (
                                             <button
                                                 onClick={() => setNewQuestion(prev => ({
                                                     ...prev,
                                                     statements: prev.statements.filter((_, i) => i !== sIdx)
                                                 }))}
-                                                className="text-slate-200 hover:text-red-400 transition-colors"
+                                                className="text-slate-200 hover:text-red-400 transition-colors mt-2"
                                             >
                                                 <X size={12} />
                                             </button>
@@ -393,7 +557,7 @@ export default function QuestionBankPage() {
                                 <button
                                     onClick={() => setNewQuestion(prev => ({
                                         ...prev,
-                                        statements: [...prev.statements, { id: crypto.randomUUID(), text: '', isCorrect: true }]
+                                        statements: [...prev.statements, { id: generateId(), text: '', isCorrect: true }]
                                     }))}
                                     className="w-full py-2.5 border border-dashed border-slate-200 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 hover:text-brand hover:border-brand transition-colors"
                                 >
@@ -532,8 +696,6 @@ export default function QuestionBankPage() {
                                             className="border-t border-slate-100 overflow-hidden"
                                         >
                                             <div className="px-6 py-5 space-y-4 bg-slate-50/30">
-
-                                                {/* Meta row */}
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div>
                                                         <label className={labelClass}>Category</label>
@@ -571,16 +733,12 @@ export default function QuestionBankPage() {
                                                         />
                                                     </div>
                                                 </div>
-
-                                                {/* Question text */}
                                                 <textarea
                                                     value={edit.questionText}
                                                     onChange={(e) => updateEdit(q.id, 'questionText', e.target.value)}
                                                     rows={2}
                                                     className="w-full text-sm font-bold text-slate-900 p-4 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none"
                                                 />
-
-                                                {/* Context fields */}
                                                 <div className="border border-dashed border-slate-200 p-4 space-y-3">
                                                     <p className={labelClass}>Context (optional)</p>
                                                     <textarea
@@ -618,8 +776,6 @@ export default function QuestionBankPage() {
                                                         )}
                                                     </div>
                                                 </div>
-
-                                                {/* Statements */}
                                                 <div className="space-y-2">
                                                     {edit.statements.map((s: any, sIdx: number) => (
                                                         <div key={s.id} className="flex gap-3 items-center">
@@ -638,7 +794,6 @@ export default function QuestionBankPage() {
                                                         </div>
                                                     ))}
                                                 </div>
-
                                                 <div className="flex justify-end">
                                                     <button
                                                         onClick={() => handleSave(q.id)}

@@ -89,6 +89,7 @@ export default function PracticePage() {
                 .from('questions')
                 .select(`
                     id, question_text, points, subcategory_id,
+                    context_text, context_image_url,
                     categories (subject),
                     question_items (id, item_text, is_correct)
                 `)
@@ -129,6 +130,8 @@ export default function PracticePage() {
             const formatted = selected.map(q => ({
                 id: q.id,
                 questionText: q.question_text,
+                contextText: q.context_text || '',
+                contextImageUrl: q.context_image_url || '',
                 points: q.points ?? (q.question_items.length - 1),
                 statements: q.question_items.map((item: any) => ({
                     id: item.id,
@@ -136,7 +139,6 @@ export default function PracticePage() {
                     isCorrect: item.is_correct
                 }))
             }));
-
             setQuestions(formatted);
         } catch (err) {
             console.error(err);

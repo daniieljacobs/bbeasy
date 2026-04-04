@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Database, Users, LayoutDashboard, BookOpen, Layers, ArrowUpRight } from 'lucide-react';
+import { Database, Users, LayoutDashboard, BookOpen, Layers, ArrowUpRight, Tags } from 'lucide-react';
 
 const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard size={15} /> },
     { name: 'Tests', href: '/admin/tests', icon: <Database size={15} /> },
     { name: 'Templates', href: '/admin/templates', icon: <Layers size={15} /> },
     { name: 'Question Bank', href: '/admin/questions', icon: <BookOpen size={15} /> },
+    { name: 'Categories', href: '/admin/categories', icon: <Tags size={15} /> },
     { name: 'User Management', href: '/admin/users', icon: <Users size={15} /> },
 ];
 
@@ -19,7 +20,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter();
     const [checked, setChecked] = useState(false);
 
-    // Client-side guard — middleware handles server side, this is a fallback
     useEffect(() => {
         async function checkAdmin() {
             const { data: { user } } = await supabase.auth.getUser();
