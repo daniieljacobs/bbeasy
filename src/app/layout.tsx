@@ -1,6 +1,7 @@
 import Background from "@/components/Background";
 import './globals.css';
 import { Roboto_Mono } from 'next/font/google';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const robotoMono = Roboto_Mono({
   subsets: ['latin'],
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="relative z-10 flex flex-col min-h-screen">
           {children}
         </div>
+        <SpeedInsights />
       </body>
     </html>
   );
