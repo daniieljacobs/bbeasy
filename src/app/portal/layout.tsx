@@ -4,17 +4,15 @@ import { useEffect, useState, Suspense, createContext, useContext } from 'react'
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { LogOut, Crown, Timer, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { LogOut, Crown, Timer, ArrowUpRight, ShieldCheck, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── ROLE CONTEXT ────────────────────────────────────────────────────────────
-// Lets child pages read the effective (possibly previewed) role
 export const RoleContext = createContext<{ effectiveRole: string; isPro: boolean }>({
     effectiveRole: 'free',
     isPro: false,
 });
 
-// --- 1. The Welcome / Onboarding Overlay ---
 function WelcomeOverlay() {
     const searchParams = useSearchParams();
     const welcomeName = searchParams.get('welcome');
@@ -126,10 +124,10 @@ function ExamCountdown() {
     );
 }
 
-// --- 2. The Main Layout ---
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<any>(null);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -147,10 +145,16 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         fetchProfile();
     }, [router]);
 
+    // Close mobile menu on route change
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [pathname]);
+
     const [previewRole, setPreviewRole] = useState<string | null>(null);
 
     async function handleLogout() {
         setIsLoggingOut(true);
+        setMobileMenuOpen(false);
         setTimeout(async () => {
             await supabase.auth.signOut();
             router.push('/');
@@ -164,11 +168,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     const effectiveRole = previewRole ?? profile?.role;
     const isPro = effectiveRole === 'pro' || effectiveRole === 'admin';
-    const isAdmin = profile?.role === 'admin'; // always based on real role
+    const isAdmin = profile?.role === 'admin';
 
     return (
         <RoleContext.Provider value={{ effectiveRole, isPro }}>
-            <div className="flex flex-col min-h-screen relative">
+            <div className="flex flex-col min-h-screen relative overflow-x-hidden">
                 <Suspense fallback={null}>
                     <WelcomeOverlay />
                 </Suspense>
@@ -200,6 +204,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     )}
                 </AnimatePresence>
 
+                {/* ── NAVBAR ── */}
                 <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-slate-100">
                     <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
 
@@ -207,7 +212,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                             BB<span className="text-brand">EASY</span>
                         </Link>
 
-                        <div className="flex items-center gap-1 flex-1">
+                        {/* ── DESKTOP NAV ── */}
+                        <div className="hidden md:flex items-center gap-1 flex-1">
                             {navLinks.map(link => {
                                 const isActive = pathname.startsWith(link.href);
                                 return (
@@ -225,9 +231,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                             })}
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
-
-                            {/* Admin button — only visible to admins */}
+                        {/* ── DESKTOP RIGHT ── */}
+                        <div className="hidden md:flex items-center gap-3 shrink-0">
                             {isAdmin && (
                                 <Link
                                     href="/admin/dashboard"
@@ -236,8 +241,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     <ShieldCheck size={11} /> Admin
                                 </Link>
                             )}
-
-                            {/* Role preview toggle — admin only */}
                             {isAdmin && (
                                 <button
                                     onClick={() => {
@@ -251,12 +254,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                             ? 'border-amber-300 text-amber-600 bg-amber-50'
                                             : 'border-slate-200 text-slate-400 hover:border-slate-400'
                                         }`}
-                                    title="Preview as different role"
                                 >
                                     {previewRole ? `👁 ${previewRole}` : '👁 view as'}
                                 </button>
                             )}
-
                             {profile && (
                                 <Link
                                     href="/portal/profile"
@@ -278,7 +279,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     )}
                                 </Link>
                             )}
-
                             <button
                                 onClick={handleLogout}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all uppercase tracking-widest"
@@ -286,7 +286,112 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                 <LogOut size={13} /> logout
                             </button>
                         </div>
+
+                        {/* ── MOBILE RIGHT ── */}
+                        <div className="flex md:hidden items-center gap-3">
+                            {profile && (
+                                <div className="w-7 h-7 rounded-full bg-brand-tint text-brand flex items-center justify-center text-[10px] font-black shrink-0">
+                                    {profile.full_name?.charAt(0) || '?'}
+                                </div>
+                            )}
+                            <button
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="p-1.5 text-slate-500 hover:text-slate-900 transition-colors"
+                            >
+                                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                            </button>
+                        </div>
                     </div>
+
+                    {/* ── MOBILE DROPDOWN ── */}
+                    <AnimatePresence>
+                        {mobileMenuOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="md:hidden overflow-hidden border-t border-slate-100 bg-white"
+                            >
+                                <div className="px-6 py-4 space-y-1 font-mono">
+
+                                    {/* Profile row */}
+                                    {profile && (
+                                        <Link
+                                            href="/portal/profile"
+                                            className="flex items-center gap-3 px-3 py-3 hover:bg-slate-50 transition-colors"
+                                        >
+                                            <div className="w-7 h-7 rounded-full bg-brand-tint text-brand flex items-center justify-center text-[10px] font-black">
+                                                {profile.full_name?.charAt(0) || '?'}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-700">
+                                                    {profile.username ? `@${profile.username}` : profile.full_name}
+                                                </p>
+                                                {isPro && (
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-brand">Pro</span>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    )}
+
+                                    <div className="h-px bg-slate-100 my-2" />
+
+                                    {/* Nav links */}
+                                    {navLinks.map(link => {
+                                        const isActive = pathname.startsWith(link.href);
+                                        return (
+                                            <Link
+                                                key={link.href}
+                                                href={link.href}
+                                                className={`flex items-center px-3 py-2.5 text-xs font-bold tracking-widest uppercase transition-all ${isActive
+                                                    ? 'text-slate-900 bg-slate-100'
+                                                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                                                    }`}
+                                            >
+                                                {link.label}
+                                            </Link>
+                                        );
+                                    })}
+
+                                    {/* Admin links */}
+                                    {isAdmin && (
+                                        <>
+                                            <div className="h-px bg-slate-100 my-2" />
+                                            <Link
+                                                href="/admin/dashboard"
+                                                className="flex items-center gap-2 px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-brand hover:bg-brand/5 transition-colors"
+                                            >
+                                                <ShieldCheck size={13} /> Admin Panel
+                                            </Link>
+                                            <button
+                                                onClick={() => {
+                                                    const roles = ['admin', 'pro', 'free'];
+                                                    const current = previewRole ?? profile?.role;
+                                                    const next = roles[(roles.indexOf(current) + 1) % roles.length];
+                                                    setPreviewRole(next === profile?.role ? null : next);
+                                                }}
+                                                className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors
+                                                    ${previewRole ? 'text-amber-600 bg-amber-50' : 'text-slate-400 hover:bg-slate-50'}`}
+                                            >
+                                                👁 {previewRole ? `Viewing as ${previewRole}` : 'View as role'}
+                                            </button>
+                                        </>
+                                    )}
+
+                                    <div className="h-px bg-slate-100 my-2" />
+
+                                    {/* Logout */}
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-red-400 hover:bg-red-50 transition-colors uppercase tracking-widest"
+                                    >
+                                        <LogOut size={13} /> Logout
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </nav>
 
                 <main className="flex-1">
@@ -299,7 +404,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] as const }}
                         className="fixed bottom-6 right-6 z-50"
                     >
                         <Link

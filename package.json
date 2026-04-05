@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^6.1.0",
+    "@stripe/stripe-js": "^9.0.1",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.2",
     "framer-motion": "^12.38.0",
@@ -18,6 +20,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-katex": "^3.1.0",
+    "stripe": "^22.0.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
