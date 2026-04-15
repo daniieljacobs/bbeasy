@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+    BUSINESS_MASTER_PROMPT,
+    MATH_MASTER_PROMPT,
+    ENGLISH_MASTER_PROMPT
+} from '@/lib/prompts';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
 const GEMINI_MODEL = 'gemini-3.1-pro-preview';
@@ -7,12 +12,33 @@ export async function POST(req: NextRequest) {
     try {
         const { prompt, categoryName, subcategoryName, extraContext } = await req.json();
 
-        const systemPrompt = `You are an expert exam question writer for the WU BBE (Vienna University of Economics and Business — Business, Economics and Social Sciences) entrance exam.
+        // 1. Select Expert Domain Knowledge based on Category
+        let expertRules = "";
+        switch (categoryName) {
+            case "Maths":
+                expertRules = MATH_MASTER_PROMPT;
+                break;
+            case "English":
+                expertRules = ENGLISH_MASTER_PROMPT;
+                break;
+            case "Economics":
+                expertRules = BUSINESS_MASTER_PROMPT;
+                break;
+            default:
+                expertRules = "Focus on academic excellence and high-stakes exam quality.";
+        }
 
-Your task is to generate a single high-quality exam question in the following JSON format:
+        // 2. Build the System Prompt using your structure but adding the Expert Logic
+        const systemPrompt = `You are an expert exam question writer for the WU BBE (Vienna University of Economics and Business) entrance exam.
+
+### EXPERT DOMAIN RULES & EXAMPLES:
+${expertRules}
+
+### OUTPUT FORMAT:
+Return a single high-quality exam question in this JSON format:
 {
   "questionText": "The question stem goes here",
-  "contextText": "Optional context shown above the question (can be empty string)",
+  "contextText": "Optional context (reading snippet or quote) shown above the question",
   "statements": [
     { "text": "Statement 1", "isCorrect": true },
     { "text": "Statement 2", "isCorrect": false },
@@ -20,35 +46,74 @@ Your task is to generate a single high-quality exam question in the following JS
   ]
 }
 
-Rules:
-- Generate between 3 and 6 statements per question
-- Each statement must be clearly true or false based on the subject matter
-- The question stem should clearly frame what the statements are about
-- Statements should be plausible — wrong ones should not be obviously wrong
-- Use contextText for passages, tables, or data that statements refer to (leave empty if not needed)
-- LaTeX math is supported using $inline$ and $$block$$ syntax
-- Match the difficulty and style of the WU BBE entrance exam
-- Return ONLY valid JSON, no markdown, no explanation, no backticks`;
+Categorization and question contents:
+### Business & Economy
+- Basic Economic Principles & Market Mechanics
+- Business Classification & Environment
+- Legal Structures & Business Finance
+- Marketing Strategy & Strategic Tools
+- Financial Accounting & Ratio Analysis
 
+### English
+- Vocabulary
+- Grammar
+- Reading Comprehension
+
+### Maths
+- Logic
+- Algebra & Equations
+	- Elementary Algebra
+	- Equations
+	- Linear Equations in two unknowns
+	- Inequalities
+- Functions
+	- Linear and quadratic functions
+	- Power functions
+	- Polynomial functions
+	- Exponential and logarithmic functions
+- Calculus
+	- Differentiation and single variable optimisation
+- Financial Mathematics
+	- Elementary financial mathematics
+- Probability & Statistics
+	- Elementary probability
+	- Binomial distribution
+
+Rules:
+- Generate EXACTLY 5 statements per question (to match the BBE standard).
+- Statements must be plausible — wrong ones should be "near-misses."
+- LaTeX math is REQUIRED for all mathematical notations using $inline$ and $$block$$ syntax.
+- Return ONLY valid JSON, no markdown, no explanation, no backticks.`;
+
+        // 3. Construct the User Message as per your template
         const userMessage = `Category: ${categoryName}${subcategoryName ? `\nSubcategory: ${subcategoryName}` : ''}
 
 Prompt instructions:
 ${prompt}
 
-${extraContext ? `Additional context from user:\n${extraContext}` : ''}
+${extraContext ? `Additional context (e.g. Fuhrmann book snippet):\n${extraContext}` : ''}
 
 Generate one exam question following the JSON format exactly.`;
 
+
+        console.log("--- FULL PROMPT SENT TO GEMINI ---");
+        console.log(`${systemPrompt}\n\n${userMessage}`);
+        console.log("--- END OF PROMPT ---");
+
+        // 4. API Call
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }],
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: `${systemPrompt}\n\n${userMessage}` }]
+                    }],
                     generationConfig: {
                         temperature: 0.7,
-                        maxOutputTokens: 8192,
+                        maxOutputTokens: 56000,
                     }
                 })
             }
@@ -60,17 +125,11 @@ Generate one exam question following the JSON format exactly.`;
         }
 
         const data = await response.json();
-
-        console.log('Gemini raw response:', JSON.stringify(data, null, 2));
-
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        console.log('RAW GEMINI TEXT:', text);
-        console.log('FINISH REASON:', data.candidates?.[0]?.finishReason);
 
         if (!text) return NextResponse.json({ error: 'No response from Gemini' }, { status: 500 });
 
-        // Extract JSON from anywhere in the response
+        // 5. Extract JSON using your Regex wrapper
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (!jsonMatch) return NextResponse.json({ error: 'Could not extract JSON from response' }, { status: 500 });
 

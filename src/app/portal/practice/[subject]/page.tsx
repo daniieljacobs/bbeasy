@@ -85,16 +85,18 @@ export default function PracticePage() {
             }
 
             // Fetch all questions for this subject with items
+
             const { data: allQuestions } = await supabase
                 .from('questions')
                 .select(`
                     id, question_text, points, subcategory_id,
                     context_text, context_image_url,
-                    categories (subject),
-                    question_items (id, item_text, is_correct)
+                    categories!inner(subject),
+                    question_items!inner(id, item_text, is_correct)
                 `)
                 .eq('categories.subject', subject)
                 .not('question_items', 'is', null);
+
 
             if (!allQuestions || allQuestions.length === 0) {
                 setError(`No questions available for ${subject} yet.`);

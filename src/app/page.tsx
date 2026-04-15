@@ -37,7 +37,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen font-mono bg-slate-50 selection:bg-brand selection:text-white">
-
       {/* ── NAVBAR ── */}
       <motion.nav
         initial={{ opacity: 0, y: -8 }}
@@ -50,6 +49,12 @@ export default function LandingPage() {
             BB<span className="text-brand">EASY</span>
           </span>
           <div className="flex items-center gap-2">
+            <Link
+              href="/about"
+              className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
+            >
+              About
+            </Link>
             <Link
               href="/auth/login"
               className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors"
@@ -76,10 +81,10 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
             <div>
-              <motion.h1 {...v(0.1)} className="text-6xl md:text-7xl font-black text-slate-900 tracking-tight leading-[0.95] mb-8">
-                The BBE<br />
-                prep tool<br />
-                <span className="text-brand">built right.</span>
+              <motion.h1 {...v(0.1)} className="text-6xl md:text-6xl font-black text-slate-900 tracking-tight leading-[0.95] mb-8">
+                BBE Admission
+                <br />
+                <span className="text-brand">Free Practice</span>
               </motion.h1>
               <motion.div {...v(0.2)} className="flex items-center gap-3">
                 <Link
@@ -99,9 +104,7 @@ export default function LandingPage() {
 
             <motion.div {...v(0.15)} className="space-y-3">
               <p className="text-slate-500 text-sm leading-relaxed">
-                Built by a student, for students. While competitors charge €300–500,
-                BBEasy gives you everything you need to prepare for the WU Wien BBE
-                entrance exam — at a fraction of the cost.
+                Repeated practice beats passive review. BBEasy gives you unlimited mock exams and topic-specific drills for the WU Wien BBE entrance exam, without the €300–500 price tag.
               </p>
               <div className="flex items-center gap-6 pt-2">
                 <div>
@@ -110,7 +113,7 @@ export default function LandingPage() {
                 </div>
                 <div className="w-px h-10 bg-slate-200" />
                 <div>
-                  <p className="text-3xl font-black text-slate-900">€19</p>
+                  <p className="text-3xl font-black text-slate-900">€20</p>
                   <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400">vs €300–500 elsewhere</p>
                 </div>
                 <div className="w-px h-10 bg-slate-200" />
@@ -151,7 +154,7 @@ export default function LandingPage() {
             Pricing
           </motion.p>
           <motion.p {...v(0.08)} className="text-slate-400 text-sm mb-10">
-            Start monthly, upgrade to lifetime anytime. Cancel whenever you want.
+            Start monthly, upgrade to lifetime anytime. Cancel whenever you are ready for the exam.
           </motion.p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-200 items-stretch">
 
@@ -182,8 +185,8 @@ export default function LandingPage() {
               <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60 mb-4">Pro</p>
               <div className="mb-8">
                 <p className="text-[9px] uppercase tracking-[0.2em] text-white/60 mb-1">Starting at</p>
-                <p className="text-5xl font-black text-white mb-1">€19</p>
-                <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">/ month · or €59 lifetime</p>
+                <p className="text-5xl font-black text-white mb-1">€20</p>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">/ month · or €40 lifetime</p>
               </div>
               <ul className="space-y-3 flex-1">
                 {proFeatures.map(f => (
@@ -209,6 +212,7 @@ export default function LandingPage() {
           <span className="font-black text-sm tracking-tight text-slate-400">
             BB<span className="text-brand">EASY</span>
           </span>
+
           <p className="text-[9px] uppercase tracking-[0.3em] text-slate-300">
             WU Wien · BBE 2026
           </p>

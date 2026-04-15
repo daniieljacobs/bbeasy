@@ -175,7 +175,7 @@ export default function PracticeRunner({
                     <div className="px-8 pt-8 pb-6 border-b border-slate-50">
                         <div className="flex items-center justify-between mb-3">
                             <span className={`text-[9px] font-black uppercase tracking-[0.3em] ${subject === 'math' ? 'text-violet-400' :
-                                    subject === 'english' ? 'text-emerald-400' : 'text-amber-400'
+                                subject === 'english' ? 'text-emerald-400' : 'text-amber-400'
                                 }`}>
                                 {subject}
                             </span>
@@ -183,6 +183,11 @@ export default function PracticeRunner({
                                 {currentQ.statements.length} statements
                             </span>
                         </div>
+
+                        <h2 className="text-lg font-black text-slate-900 leading-snug">
+                            <MathText text={currentQ.questionText} />
+                        </h2>
+                        <br></br>
 
                         {/* Context — text */}
                         {currentQ.contextText && (
@@ -202,9 +207,7 @@ export default function PracticeRunner({
                             </div>
                         )}
 
-                        <h2 className="text-lg font-black text-slate-900 leading-snug">
-                            <MathText text={currentQ.questionText} />
-                        </h2>
+
                     </div>
 
                     {/* Statements */}
@@ -218,8 +221,8 @@ export default function PracticeRunner({
                                 <div
                                     key={s.id}
                                     className={`px-8 py-5 transition-colors ${checked
-                                            ? isRight ? 'bg-emerald-50/50' : 'bg-red-50/50'
-                                            : 'hover:bg-slate-50/50'
+                                        ? isRight ? 'bg-emerald-50/50' : 'bg-red-50/50'
+                                        : 'hover:bg-slate-50/50'
                                         }`}
                                 >
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -360,6 +360,11 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                         </span>
                     </div>
 
+                    <h2 className="text-lg font-black text-slate-900 leading-snug">
+                        <MathText text={currentQ.questionText} />
+                    </h2>
+                    <br></br>
+
                     {/* Context — text */}
                     {currentQ.contextText && (
                         <div className="mb-4 p-4 bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
@@ -378,9 +383,7 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                         </div>
                     )}
 
-                    <h2 className="text-lg font-black text-slate-900 leading-snug">
-                        <MathText text={currentQ.questionText} />
-                    </h2>
+
                 </div>
 
                 <div className="divide-y divide-slate-50">
@@ -397,8 +400,8 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                                             key={val}
                                             onClick={() => handleSelect(currentQ.id, s.id, val)}
                                             className={`px-5 py-2 text-[9px] font-black tracking-widest uppercase transition-all border ${selected === val
-                                                    ? 'bg-brand text-white border-brand shadow-md shadow-brand/20'
-                                                    : 'bg-white border-slate-200 text-slate-400 hover:border-slate-400 hover:text-slate-700'
+                                                ? 'bg-brand text-white border-brand shadow-md shadow-brand/20'
+                                                : 'bg-white border-slate-200 text-slate-400 hover:border-slate-400 hover:text-slate-700'
                                                 }`}
                                         >
                                             {val}
@@ -445,10 +448,10 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                         key={idx}
                         onClick={() => setCurrentIdx(idx)}
                         className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${currentIdx === idx
-                                ? 'bg-brand scale-125 shadow-md shadow-brand/30'
-                                : isQuestionComplete(idx)
-                                    ? 'bg-brand/30'
-                                    : 'bg-slate-200'
+                            ? 'bg-brand scale-125 shadow-md shadow-brand/30'
+                            : isQuestionComplete(idx)
+                                ? 'bg-brand/30'
+                                : 'bg-slate-200'
                             }`}
                     />
                 ))}

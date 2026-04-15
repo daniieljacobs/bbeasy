@@ -197,7 +197,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     See you next time.
                                 </h1>
                                 <p className="text-[10px] text-brand mt-6 uppercase tracking-[0.4em] font-bold">
-                                    SECURELY LOGGING OUT
+                                    THANK YOU FOR USING BBEASY
                                 </p>
                             </motion.div>
                         </motion.div>
