@@ -15,12 +15,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     {children}
                 </div>
             ) : (
-                <div className="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-[2.5rem] border border-slate-100 shadow-xl p-10">
-                    <div className="mb-10 text-center">
-                        <Link href="/" className="font-black text-2xl tracking-tight hover:opacity-70 transition-opacity">
-                            BB<span className="text-brand">EASY</span>
-                        </Link>
-                    </div>
+                <div className="w-full max-w-md  p-10">
+
                     {children}
                 </div>
             )}

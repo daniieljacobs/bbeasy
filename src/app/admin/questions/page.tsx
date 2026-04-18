@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Trash2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Save, Loader2, PlusCircle, Plus, X, Sparkles, Settings2 } from 'lucide-react';
+import { Trash2, CheckCircle2, XCircle, ChevronDown, ChevronUp, Save, Loader2, PlusCircle, Plus, X, Sparkles, Settings2, Upload, FileJson, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MathText from '@/components/MathText';
 
@@ -22,6 +22,21 @@ interface NewQuestion {
     statements: Statement[];
 }
 
+interface ImportedQuestion {
+    questionText: string;
+    contextText?: string;
+    contextImageUrl?: string;
+    points?: number;
+    categoryName?: string;
+    subcategoryName?: string;
+    statements: { text: string; isCorrect: boolean }[];
+}
+
+interface ImportPreview {
+    questions: ImportedQuestion[];
+    errors: string[];
+}
+
 const generateId = () => crypto.randomUUID();
 
 const emptyStatements = (): Statement[] => [
@@ -38,6 +53,70 @@ const DEFAULT_PROMPT = `Generate a challenging but fair exam question suitable f
 The question should test understanding of core concepts in the given category and subcategory.
 Statements should be precise, unambiguous, and require genuine knowledge to evaluate correctly.
 Mix true and false statements. Avoid trick questions — difficulty should come from depth of knowledge required.`;
+
+const JSON_SCHEMA_HINT = `Expected format (single or array):
+{
+  "questionText": "...",
+  "contextText": "...",        // optional
+  "categoryName": "Math",      // optional
+  "subcategoryName": "Algebra",// optional
+  "points": 4,                 // optional, defaults to n-1
+  "statements": [
+    { "text": "...", "isCorrect": true },
+    { "text": "...", "isCorrect": false }
+  ]
+}`;
+
+function parseImportJson(raw: string): ImportPreview {
+    const errors: string[] = [];
+    let parsed: any;
+
+    try {
+        parsed = JSON.parse(raw);
+    } catch (e: any) {
+        return { questions: [], errors: [`Invalid JSON: ${e.message}`] };
+    }
+
+    const items: any[] = Array.isArray(parsed) ? parsed : [parsed];
+    const questions: ImportedQuestion[] = [];
+
+    items.forEach((item, idx) => {
+        const label = `Question ${idx + 1}`;
+        if (typeof item !== 'object' || item === null) {
+            errors.push(`${label}: not an object`);
+            return;
+        }
+        if (!item.questionText || typeof item.questionText !== 'string') {
+            errors.push(`${label}: missing or invalid "questionText"`);
+            return;
+        }
+        if (!Array.isArray(item.statements) || item.statements.length === 0) {
+            errors.push(`${label}: "statements" must be a non-empty array`);
+            return;
+        }
+        const stmtErrors: string[] = [];
+        const statements = item.statements.map((s: any, si: number) => {
+            if (!s.text || typeof s.text !== 'string') stmtErrors.push(`statement ${si + 1} missing "text"`);
+            if (typeof s.isCorrect !== 'boolean') stmtErrors.push(`statement ${si + 1} "isCorrect" must be boolean`);
+            return { text: s.text || '', isCorrect: !!s.isCorrect };
+        });
+        if (stmtErrors.length) {
+            errors.push(`${label}: ${stmtErrors.join(', ')}`);
+            return;
+        }
+        questions.push({
+            questionText: item.questionText,
+            contextText: item.contextText || '',
+            contextImageUrl: item.contextImageUrl || '',
+            points: typeof item.points === 'number' ? item.points : statements.length - 1,
+            categoryName: item.categoryName || '',
+            subcategoryName: item.subcategoryName || '',
+            statements,
+        });
+    });
+
+    return { questions, errors };
+}
 
 export default function QuestionBankPage() {
     const [questions, setQuestions] = useState<any[]>([]);
@@ -60,6 +139,14 @@ export default function QuestionBankPage() {
     const [genPrompt, setGenPrompt] = useState(DEFAULT_PROMPT);
     const [genExtraContext, setGenExtraContext] = useState('');
     const [genError, setGenError] = useState('');
+
+    // JSON import state
+    const [showImport, setShowImport] = useState(false);
+    const [importRaw, setImportRaw] = useState('');
+    const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const [importSuccess, setImportSuccess] = useState<number | null>(null);
+    const importFileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => { fetchAll(); }, []);
 
@@ -100,6 +187,99 @@ export default function QuestionBankPage() {
         setNewQuestion(emptyQuestion());
         setGenExtraContext('');
         setGenError('');
+    }
+
+    // ── JSON IMPORT HANDLERS ──
+
+    function handleImportFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const text = ev.target?.result as string;
+            setImportRaw(text);
+            setImportPreview(parseImportJson(text));
+            setImportSuccess(null);
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    }
+
+    function handleImportTextChange(val: string) {
+        setImportRaw(val);
+        setImportSuccess(null);
+        if (val.trim()) {
+            setImportPreview(parseImportJson(val));
+        } else {
+            setImportPreview(null);
+        }
+    }
+
+    async function handleImportSave() {
+        if (!importPreview || importPreview.questions.length === 0) return;
+        setIsImporting(true);
+
+        let savedCount = 0;
+        const localCats = [...categories];
+        const localSubs = [...allSubcategories];
+
+        for (const iq of importPreview.questions) {
+            // Resolve or create category
+            let categoryId: string | null = null;
+            if (iq.categoryName) {
+                let cat = localCats.find(c => c.name.toLowerCase() === iq.categoryName!.toLowerCase());
+                if (!cat) {
+                    const { data } = await supabase.from('categories').insert({ name: iq.categoryName }).select().single();
+                    if (data) { localCats.push(data); cat = data; }
+                }
+                categoryId = cat?.id || null;
+            }
+
+            // Resolve or create subcategory
+            let subcategoryId: string | null = null;
+            if (iq.subcategoryName && categoryId) {
+                let sub = localSubs.find(s => s.name.toLowerCase() === iq.subcategoryName!.toLowerCase() && s.category_id === categoryId);
+                if (!sub) {
+                    const { data } = await supabase.from('subcategories').insert({ category_id: categoryId, name: iq.subcategoryName }).select().single();
+                    if (data) { localSubs.push(data); sub = data; }
+                }
+                subcategoryId = sub?.id || null;
+            }
+
+            const { data: qData, error: qErr } = await supabase
+                .from('questions')
+                .insert({
+                    category_id: categoryId,
+                    subcategory_id: subcategoryId,
+                    question_text: iq.questionText,
+                    points: iq.points,
+                    context_text: iq.contextText || null,
+                    context_image_url: iq.contextImageUrl || null,
+                })
+                .select().single();
+
+            if (qErr || !qData) continue;
+
+            await supabase.from('question_items').insert(
+                iq.statements.map(s => ({ question_id: qData.id, item_text: s.text, is_correct: s.isCorrect }))
+            );
+            savedCount++;
+        }
+
+        setCategories(localCats);
+        setAllSubcategories(localSubs);
+        await fetchAll();
+        setIsImporting(false);
+        setImportSuccess(savedCount);
+        setImportRaw('');
+        setImportPreview(null);
+    }
+
+    function closeImport() {
+        setShowImport(false);
+        setImportRaw('');
+        setImportPreview(null);
+        setImportSuccess(null);
     }
 
     async function handleGenerate() {
@@ -290,17 +470,186 @@ export default function QuestionBankPage() {
                     <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">Questions.</h1>
                     <p className="text-slate-400 text-sm mt-2">{questions.length} questions in bank</p>
                 </div>
-                <button
-                    onClick={() => { setShowNewForm(!showNewForm); resetNewForm(); }}
-                    className={`flex items-center gap-2 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-colors
-                        ${showNewForm
-                            ? 'bg-slate-100 text-slate-600 border-slate-200'
-                            : 'bg-brand text-white border-brand hover:bg-slate-900 hover:border-slate-900'
-                        }`}
-                >
-                    {showNewForm ? <><X size={12} /> Cancel</> : <><Plus size={12} /> New Question</>}
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Import JSON button */}
+                    <button
+                        onClick={() => { setShowImport(!showImport); if (showImport) closeImport(); }}
+                        className={`flex items-center gap-2 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-colors
+                            ${showImport
+                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-brand hover:text-brand'
+                            }`}
+                    >
+                        <FileJson size={12} /> Import JSON
+                    </button>
+                    <button
+                        onClick={() => { setShowNewForm(!showNewForm); resetNewForm(); }}
+                        className={`flex items-center gap-2 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-colors
+                            ${showNewForm
+                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                : 'bg-brand text-white border-brand hover:bg-slate-900 hover:border-slate-900'
+                            }`}
+                    >
+                        {showNewForm ? <><X size={12} /> Cancel</> : <><Plus size={12} /> New Question</>}
+                    </button>
+                </div>
             </motion.div>
+
+            {/* ── JSON IMPORT PANEL ── */}
+            <AnimatePresence>
+                {showImport && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.3 }}
+                        className="mb-8 bg-white border-l-2 border-l-emerald-400 border border-slate-100"
+                    >
+                        {/* Panel header */}
+                        <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <FileJson size={14} className="text-emerald-500" />
+                                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-600">Import from JSON</span>
+                                <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">Single question or bulk array</span>
+                            </div>
+                            <button
+                                onClick={() => importFileRef.current?.click()}
+                                className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-emerald-400 hover:text-emerald-600 transition-colors"
+                            >
+                                <Upload size={11} /> Upload .json file
+                            </button>
+                            <input
+                                ref={importFileRef}
+                                type="file"
+                                accept=".json,application/json"
+                                className="hidden"
+                                onChange={handleImportFileChange}
+                            />
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {/* Two-column: textarea + schema hint */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className={labelClass}>Paste JSON</label>
+                                    <textarea
+                                        value={importRaw}
+                                        onChange={(e) => handleImportTextChange(e.target.value)}
+                                        placeholder={`[\n  { "questionText": "...", "statements": [...] },\n  ...\n]`}
+                                        rows={10}
+                                        className="w-full text-xs text-slate-700 p-3 bg-slate-50 border border-slate-100 outline-none focus:border-emerald-400 transition-colors resize-none font-mono placeholder:text-slate-300"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className={labelClass}>Schema Reference</label>
+                                    <pre className="text-[10px] leading-relaxed text-slate-400 bg-slate-50 border border-slate-100 p-3 overflow-auto h-full whitespace-pre-wrap">
+                                        {JSON_SCHEMA_HINT}
+                                    </pre>
+                                </div>
+                            </div>
+
+                            {/* Preview */}
+                            <AnimatePresence>
+                                {importPreview && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        {/* Errors */}
+                                        {importPreview.errors.length > 0 && (
+                                            <div className="mb-3 p-3 bg-red-50 border border-red-100 space-y-1">
+                                                {importPreview.errors.map((err, i) => (
+                                                    <div key={i} className="flex items-start gap-2">
+                                                        <AlertCircle size={11} className="text-red-400 shrink-0 mt-0.5" />
+                                                        <span className="text-[10px] text-red-500">{err}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Valid question previews */}
+                                        {importPreview.questions.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">
+                                                        Preview — {importPreview.questions.length} question{importPreview.questions.length !== 1 ? 's' : ''} ready
+                                                    </span>
+                                                </div>
+                                                <div className="border border-slate-100 divide-y divide-slate-50 max-h-64 overflow-y-auto">
+                                                    {importPreview.questions.map((iq, i) => (
+                                                        <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/50">
+                                                            <span className="text-[8px] font-black text-slate-300 pt-0.5 w-5 shrink-0">
+                                                                {String(i + 1).padStart(2, '0')}
+                                                            </span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs font-bold text-slate-800 truncate">{iq.questionText}</p>
+                                                                <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                                                    {iq.categoryName && (
+                                                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-500">{iq.categoryName}</span>
+                                                                    )}
+                                                                    {iq.subcategoryName && (
+                                                                        <span className="text-[8px] uppercase tracking-[0.2em] text-slate-400">{iq.subcategoryName}</span>
+                                                                    )}
+                                                                    <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">
+                                                                        {iq.statements.length} statements · {iq.points} pts
+                                                                    </span>
+                                                                    <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">
+                                                                        {iq.statements.filter(s => s.isCorrect).length}✓ {iq.statements.filter(s => !s.isCorrect).length}✗
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Success message */}
+                            <AnimatePresence>
+                                {importSuccess !== null && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100"
+                                    >
+                                        <CheckCircle size={12} className="text-emerald-500" />
+                                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">
+                                            {importSuccess} question{importSuccess !== 1 ? 's' : ''} imported successfully
+                                        </span>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-between pt-1">
+                                <button
+                                    onClick={closeImport}
+                                    className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-700 transition-colors"
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    onClick={handleImportSave}
+                                    disabled={isImporting || !importPreview || importPreview.questions.length === 0}
+                                    className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-emerald-700 transition-colors disabled:opacity-30"
+                                >
+                                    {isImporting
+                                        ? <><Loader2 size={12} className="animate-spin" /> Importing...</>
+                                        : <><Save size={12} /> Import {importPreview && importPreview.questions.length > 0 ? `${importPreview.questions.length} Question${importPreview.questions.length !== 1 ? 's' : ''}` : 'Questions'}</>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ── NEW QUESTION FORM ── */}
             <AnimatePresence>

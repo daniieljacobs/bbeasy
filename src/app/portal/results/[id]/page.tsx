@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Trophy, Target, Zap, ArrowLeft, RotateCcw, Timer, TrendingUp } from 'lucide-react';
+import { Trophy, Target, Zap, ArrowLeft, RotateCcw, Timer, TrendingUp } from 'lucide-react';
+import ResultsReview from '@/components/ResultsReview';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -47,9 +48,12 @@ export default async function ResultsPage({ params }: PageProps) {
                 question_items (
                     id,
                     item_text,
+                    is_correct,
                     questions (
                         id,
                         question_text,
+                        context_text,
+                        context_image_url,
                         points
                     )
                 )
@@ -63,22 +67,37 @@ export default async function ResultsPage({ params }: PageProps) {
         return notFound();
     }
 
-    // Group answers by question
-    const questionMap = new Map<string, { questionText: string; points: number; statements: any[] }>();
+    // Group answers by question, preserving order
+    const questionMap = new Map<string, {
+        questionText: string;
+        contextText: string | null;
+        contextImageUrl: string | null;
+        points: number;
+        statements: {
+            text: string;
+            correctAnswer: boolean;   // the actual correct answer
+            userChoice: boolean;      // what the user picked
+            isCorrect: boolean;       // whether user was right
+        }[];
+    }>();
+
     result.user_answers.forEach((answer: any) => {
         const question = answer.question_items?.questions;
         if (!question) return;
         if (!questionMap.has(question.id)) {
             questionMap.set(question.id, {
                 questionText: question.question_text,
+                contextText: question.context_text ?? null,
+                contextImageUrl: question.context_image_url ?? null,
                 points: question.points ?? 0,
                 statements: []
             });
         }
         questionMap.get(question.id)!.statements.push({
             text: answer.question_items.item_text,
+            correctAnswer: answer.question_items.is_correct,
+            userChoice: answer.user_choice,
             isCorrect: answer.is_correct,
-            userChoice: answer.user_choice
         });
     });
 
@@ -88,8 +107,6 @@ export default async function ResultsPage({ params }: PageProps) {
     const timeLimit = (result.tests as any)?.time_limit ?? 0;
     const timeLimitSecs = timeLimit * 60;
     const multiplier = getMultiplier(timeTaken, timeLimitSecs);
-
-    // Points breakdown
     const earnedPoints = result.correct_count ?? 0;
     const totalPoints = result.total_count ?? 0;
 
@@ -156,7 +173,6 @@ export default async function ResultsPage({ params }: PageProps) {
                     ))}
                 </div>
 
-                {/* Points not awarded notice */}
                 {!passed && (
                     <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-4">
                         Score below 70% — no prep points awarded
@@ -164,58 +180,13 @@ export default async function ResultsPage({ params }: PageProps) {
                 )}
             </div>
 
-            {/* ── BREAKDOWN ── */}
+            {/* ── SLIDING QUESTION REVIEW ── */}
             <div>
                 <div className="flex items-baseline justify-between mb-5">
-                    <p className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400">Question Breakdown</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400">Question Review</p>
                     <p className="text-[9px] text-slate-300 uppercase tracking-widest">{questions.length} questions</p>
                 </div>
-
-                <div className="space-y-3">
-                    {questions.map((q, qIdx) => {
-                        const correctCount = q.statements.filter((s: any) => s.isCorrect).length;
-                        const allCorrect = correctCount === q.statements.length;
-                        const noneCorrect = correctCount === 0;
-
-                        return (
-                            <div key={qIdx} className={`bg-white border ${allCorrect ? 'border-l-2 border-l-emerald-400 border-slate-100' : noneCorrect ? 'border-l-2 border-l-red-400 border-slate-100' : 'border-l-2 border-l-amber-400 border-slate-100'}`}>
-                                {/* Question header */}
-                                <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
-                                    <p className="text-sm font-black text-slate-900 leading-tight">{q.questionText}</p>
-                                    <div className="flex items-center gap-3 shrink-0 ml-4">
-                                        <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400">
-                                            {correctCount}/{q.statements.length} correct
-                                        </span>
-                                        <span className="text-[9px] uppercase tracking-[0.2em] text-slate-300">
-                                            {q.points}pts
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Statements */}
-                                <div className="divide-y divide-slate-50">
-                                    {q.statements.map((s: any, sIdx: number) => (
-                                        <div
-                                            key={sIdx}
-                                            className="flex items-center justify-between px-6 py-3"
-                                        >
-                                            <p className="text-sm text-slate-600 italic pr-4">{s.text}</p>
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${s.userChoice ? 'text-slate-600' : 'text-slate-400'}`}>
-                                                    {s.userChoice ? 'True' : 'False'}
-                                                </span>
-                                                {s.isCorrect
-                                                    ? <CheckCircle size={14} className="text-emerald-500" />
-                                                    : <XCircle size={14} className="text-red-400" />
-                                                }
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                <ResultsReview questions={questions} />
             </div>
 
             {/* ── BOTTOM CTA ── */}

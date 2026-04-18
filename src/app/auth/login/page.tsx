@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -59,7 +58,6 @@ export default function LoginPage() {
                         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                         className="w-full max-w-sm"
                     >
-
                         {/* Logo */}
                         <div className="mb-10 text-center">
                             <Link href="/" className="font-black text-2xl tracking-tight hover:opacity-70 transition-opacity">
@@ -89,7 +87,15 @@ export default function LoginPage() {
                                 />
                             </div>
                             <div>
-                                <label className={labelClass}>Password</label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className={labelClass} style={{ margin: 0 }}>Password</label>
+                                    <Link
+                                        href="/auth/forgot-password"
+                                        className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300 hover:text-brand transition-colors"
+                                    >
+                                        Forgot?
+                                    </Link>
+                                </div>
                                 <input
                                     required
                                     type="password"

@@ -66,6 +66,12 @@ export default function RegisterPage() {
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="w-full max-w-sm font-mono"
         >
+            {/* Logo */}
+            <div className="mb-10 text-center">
+                <Link href="/" className="font-black text-2xl tracking-tight hover:opacity-70 transition-opacity">
+                    BB<span className="text-brand">EASY</span>
+                </Link>
+            </div>
             {/* Header */}
             <div className="mb-8 border-b border-slate-200 pb-8">
                 <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400 mb-2">Create account</p>
