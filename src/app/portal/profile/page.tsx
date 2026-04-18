@@ -23,7 +23,7 @@ function RadarChart({ data }: { data: Record<string, number> }) {
         </div>
     );
 
-    const size = 180;
+    const size = 250;
     const cx = size / 2;
     const cy = size / 2;
     const radius = 62;
@@ -57,12 +57,33 @@ function RadarChart({ data }: { data: Record<string, number> }) {
             <polygon points={polygonPoints} fill={color} fillOpacity="0.12" stroke={color} strokeWidth="2" strokeLinejoin="round" />
             {dataPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill={color} />)}
             {entries.map(([label], i) => {
-                const p = point(i, radius + 18);
+                const p = point(i, radius + 22); // Increased padding slightly for multi-line
+                const words = label.split(' ');
+                const lineHeight = 9; // Adjust based on fontSize
+
                 return (
-                    <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle"
-                        fontSize="8" fontWeight="700" fill="#94a3b8" fontFamily="monospace"
-                        style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {label.length > 9 ? label.slice(0, 9) + '…' : label}
+                    <text
+                        key={i}
+                        x={p.x}
+                        y={p.y}
+                        textAnchor="middle"
+                        fontSize="8"
+                        fontWeight="700"
+                        fill="#94a3b8"
+                        fontFamily="monospace"
+                        style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                    >
+                        {words.map((word, index) => (
+                            <tspan
+                                key={index}
+                                x={p.x}
+                                // dy centers the block: first line moves up by half total height, 
+                                // subsequent lines move down by lineHeight
+                                dy={index === 0 ? -(words.length - 1) * lineHeight / 2 : lineHeight}
+                            >
+                                {word}
+                            </tspan>
+                        ))}
                     </text>
                 );
             })}
@@ -79,7 +100,6 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // Use effective role from context (respects admin preview toggle)
     const { isPro } = useContext(RoleContext);
 
     useEffect(() => { fetchAll(); }, []);
@@ -122,7 +142,6 @@ export default function ProfilePage() {
             }
         }
 
-        // Only fetch subject breakdown for pro/admin — never send to free users
         if (profileData?.role === 'pro' || profileData?.role === 'admin') {
             const { data: answers } = await supabase
                 .from('user_answers')
@@ -176,8 +195,7 @@ export default function ProfilePage() {
 
     return (
         <div className="max-w-5xl mx-auto px-6 py-14 font-mono">
-
-            {/* ── HEADER ── */}
+            {/* Header */}
             <motion.div {...fadeUp(0)} className="mb-14 border-b border-slate-200 pb-8 flex items-end justify-between">
                 <div>
                     <p className="text-[9px] uppercase tracking-[0.4em] text-slate-400 mb-3">Profile</p>
@@ -206,7 +224,7 @@ export default function ProfilePage() {
                 )}
             </motion.div>
 
-            {/* ── STATS ── */}
+            {/* Stats */}
             <motion.div {...fadeUp(0.08)} className="mb-14 grid grid-cols-2 md:grid-cols-4 gap-6">
                 {[
                     { label: 'Prep Points', value: stats.totalPoints, icon: <Zap size={15} /> },
@@ -228,7 +246,7 @@ export default function ProfilePage() {
                 ))}
             </motion.div>
 
-            {/* ── SPIDER CHARTS ── */}
+            {/* Spider Charts */}
             <motion.div {...fadeUp(0.16)} className="mb-14">
                 <div className="flex items-baseline justify-between mb-5">
                     <p className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400">Performance by Subject</p>
@@ -290,7 +308,7 @@ export default function ProfilePage() {
                 )}
             </motion.div>
 
-            {/* ── TEST HISTORY ── */}
+            {/* Test History */}
             <motion.div {...fadeUp(0.22)}>
                 <div className="flex items-baseline justify-between mb-5">
                     <p className="text-[9px] font-black uppercase tracking-[0.35em] text-slate-400">Test History</p>
