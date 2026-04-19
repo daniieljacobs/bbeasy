@@ -224,7 +224,6 @@ export default function QuestionBankPage() {
         const localSubs = [...allSubcategories];
 
         for (const iq of importPreview.questions) {
-            // Resolve or create category
             let categoryId: string | null = null;
             if (iq.categoryName) {
                 let cat = localCats.find(c => c.name.toLowerCase() === iq.categoryName!.toLowerCase());
@@ -235,7 +234,6 @@ export default function QuestionBankPage() {
                 categoryId = cat?.id || null;
             }
 
-            // Resolve or create subcategory
             let subcategoryId: string | null = null;
             if (iq.subcategoryName && categoryId) {
                 let sub = localSubs.find(s => s.name.toLowerCase() === iq.subcategoryName!.toLowerCase() && s.category_id === categoryId);
@@ -471,7 +469,6 @@ export default function QuestionBankPage() {
                     <p className="text-slate-400 text-sm mt-2">{questions.length} questions in bank</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Import JSON button */}
                     <button
                         onClick={() => { setShowImport(!showImport); if (showImport) closeImport(); }}
                         className={`flex items-center gap-2 px-5 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] border transition-colors
@@ -505,7 +502,6 @@ export default function QuestionBankPage() {
                         transition={{ duration: 0.3 }}
                         className="mb-8 bg-white border-l-2 border-l-emerald-400 border border-slate-100"
                     >
-                        {/* Panel header */}
                         <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <FileJson size={14} className="text-emerald-500" />
@@ -528,7 +524,6 @@ export default function QuestionBankPage() {
                         </div>
 
                         <div className="p-6 space-y-4">
-                            {/* Two-column: textarea + schema hint */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className={labelClass}>Paste JSON</label>
@@ -548,7 +543,6 @@ export default function QuestionBankPage() {
                                 </div>
                             </div>
 
-                            {/* Preview */}
                             <AnimatePresence>
                                 {importPreview && (
                                     <motion.div
@@ -558,7 +552,6 @@ export default function QuestionBankPage() {
                                         transition={{ duration: 0.2 }}
                                         className="overflow-hidden"
                                     >
-                                        {/* Errors */}
                                         {importPreview.errors.length > 0 && (
                                             <div className="mb-3 p-3 bg-red-50 border border-red-100 space-y-1">
                                                 {importPreview.errors.map((err, i) => (
@@ -570,7 +563,6 @@ export default function QuestionBankPage() {
                                             </div>
                                         )}
 
-                                        {/* Valid question previews */}
                                         {importPreview.questions.length > 0 && (
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
@@ -610,7 +602,6 @@ export default function QuestionBankPage() {
                                 )}
                             </AnimatePresence>
 
-                            {/* Success message */}
                             <AnimatePresence>
                                 {importSuccess !== null && (
                                     <motion.div
@@ -627,7 +618,6 @@ export default function QuestionBankPage() {
                                 )}
                             </AnimatePresence>
 
-                            {/* Actions */}
                             <div className="flex items-center justify-between pt-1">
                                 <button
                                     onClick={closeImport}
@@ -661,7 +651,6 @@ export default function QuestionBankPage() {
                         transition={{ duration: 0.3 }}
                         className="mb-8 bg-white border-l-2 border-l-brand border border-slate-100"
                     >
-                        {/* Form header */}
                         <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 grid grid-cols-4 gap-4 items-end">
                             <div>
                                 <label className={labelClass}>Category</label>
@@ -799,7 +788,6 @@ export default function QuestionBankPage() {
 
                         {/* Form body */}
                         <div className="p-6 space-y-4">
-                            {/* Question text with MathText preview */}
                             <div className="space-y-2">
                                 <textarea
                                     value={newQuestion.questionText}
@@ -815,7 +803,6 @@ export default function QuestionBankPage() {
                                 )}
                             </div>
 
-                            {/* Context fields */}
                             <div className="border border-dashed border-slate-200 p-4 space-y-3">
                                 <p className={labelClass}>Context (optional) — shown above question</p>
                                 <textarea
@@ -1082,12 +1069,23 @@ export default function QuestionBankPage() {
                                                         />
                                                     </div>
                                                 </div>
-                                                <textarea
-                                                    value={edit.questionText}
-                                                    onChange={(e) => updateEdit(q.id, 'questionText', e.target.value)}
-                                                    rows={2}
-                                                    className="w-full text-sm font-bold text-slate-900 p-4 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none"
-                                                />
+
+                                                {/* Question text + preview */}
+                                                <div className="space-y-2">
+                                                    <textarea
+                                                        value={edit.questionText}
+                                                        onChange={(e) => updateEdit(q.id, 'questionText', e.target.value)}
+                                                        rows={2}
+                                                        className="w-full text-sm font-bold text-slate-900 p-4 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none"
+                                                    />
+                                                    {edit.questionText && (
+                                                        <div className="px-4 py-2 bg-white border border-slate-100 text-sm font-bold text-slate-700">
+                                                            <MathText text={edit.questionText} />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Context + preview */}
                                                 <div className="border border-dashed border-slate-200 p-4 space-y-3">
                                                     <p className={labelClass}>Context (optional)</p>
                                                     <textarea
@@ -1097,6 +1095,11 @@ export default function QuestionBankPage() {
                                                         rows={2}
                                                         className="w-full text-xs text-slate-700 p-3 bg-white border border-slate-100 outline-none focus:border-brand transition-colors resize-none placeholder:text-slate-300"
                                                     />
+                                                    {edit.contextText && (
+                                                        <div className="px-3 py-2 bg-white border border-slate-100 text-xs text-slate-600">
+                                                            <MathText text={edit.contextText} />
+                                                        </div>
+                                                    )}
                                                     <div className="flex items-center gap-3">
                                                         {edit.contextImageUrl ? (
                                                             <div className="flex items-center gap-2">
@@ -1125,24 +1128,34 @@ export default function QuestionBankPage() {
                                                         )}
                                                     </div>
                                                 </div>
+
+                                                {/* Statements + per-statement preview */}
                                                 <div className="space-y-2">
                                                     {edit.statements.map((s: any, sIdx: number) => (
-                                                        <div key={s.id} className="flex gap-3 items-center">
+                                                        <div key={s.id} className="flex gap-3 items-start">
                                                             <button
                                                                 onClick={() => updateStatement(q.id, sIdx, 'isCorrect', !s.isCorrect)}
-                                                                className={`w-8 h-8 flex items-center justify-center transition-colors shrink-0
+                                                                className={`w-8 h-8 flex items-center justify-center transition-colors shrink-0 mt-0.5
                                                                     ${s.isCorrect ? 'text-emerald-500 bg-emerald-50' : 'text-red-400 bg-red-50'}`}
                                                             >
                                                                 {s.isCorrect ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                                                             </button>
-                                                            <input
-                                                                value={s.text}
-                                                                onChange={(e) => updateStatement(q.id, sIdx, 'text', e.target.value)}
-                                                                className="flex-1 px-4 py-2 bg-white border border-slate-100 text-sm outline-none focus:border-brand transition-colors"
-                                                            />
+                                                            <div className="flex-1 space-y-1">
+                                                                <input
+                                                                    value={s.text}
+                                                                    onChange={(e) => updateStatement(q.id, sIdx, 'text', e.target.value)}
+                                                                    className="w-full px-4 py-2 bg-white border border-slate-100 text-sm outline-none focus:border-brand transition-colors"
+                                                                />
+                                                                {s.text && (
+                                                                    <div className="px-4 py-1 text-xs text-slate-500">
+                                                                        <MathText text={s.text} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
+
                                                 <div className="flex justify-end">
                                                     <button
                                                         onClick={() => handleSave(q.id)}
