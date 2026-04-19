@@ -60,7 +60,8 @@ export default function UserDashboard() {
         const { data: userResults } = await supabase
             .from('test_results')
             .select('test_id, score, points_awarded')
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .eq('is_practice', false);
 
         // Fetch templates
         const { data: templates } = await supabase

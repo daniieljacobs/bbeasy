@@ -125,20 +125,48 @@ export default function ProfilePage() {
 
         if (results && results.length > 0) {
             const avg = Math.round(results.reduce((a, r) => a + r.score, 0) / results.length);
+            //const avg = results.reduce((a, r) => a + r.score, 0) / results.length;
             const totalPoints = results.reduce((a, r) => a + (r.points_awarded || 0), 0);
             setStats({ totalPoints, testsCompleted: results.length, avgScore: avg });
             setTestHistory(results);
 
-            const { data: allResults } = await supabase.from('test_results').select('user_id, score').eq('is_practice', false);
+            const { data: allResults } = await supabase
+                .from('test_results')
+                .select('user_id, score')
+                .eq('is_practice', false);
+
             if (allResults) {
+                const { data: allProfiles } = await supabase
+                    .from('profiles')
+                    .select('id');
+
+                const profileIds = new Set(allProfiles?.map(p => p.id) || []);
+
                 const userAvgs: Record<string, number[]> = {};
                 allResults.forEach((r: any) => {
+                    if (!profileIds.has(r.user_id)) return; // exclude ghost users
                     if (!userAvgs[r.user_id]) userAvgs[r.user_id] = [];
                     userAvgs[r.user_id].push(r.score);
                 });
-                const avgs = Object.values(userAvgs).map(scores => scores.reduce((a, b) => a + b, 0) / scores.length);
+
+                const avgs = Object.values(userAvgs).map(
+                    scores => scores.reduce((a, b) => a + b, 0) / scores.length
+                );
+
+
+                const avg = results.reduce((a, r) => a + r.score, 0) / results.length;
                 const below = avgs.filter(a => a < avg).length;
                 setPercentile(Math.round((below / avgs.length) * 100));
+
+                // const below = avgs.filter(a => a < avg).length;
+                //setPercentile(Math.round((below / avgs.length) * 100));
+
+
+
+                //LOGS
+                console.log('profile avg', avg);
+                console.log('profile universe size', avgs.length);
+                console.log('profile below count', below);
             }
         }
 
@@ -341,9 +369,14 @@ export default function ProfilePage() {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 0.25 + i * 0.03 }}
-                                        className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors"
+                                        className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors cursor-pointer"
+                                        onClick={() => router.push(`/portal/profile/results/${r.id}`)}
                                     >
-                                        <td className="px-6 py-4 text-sm font-black text-slate-900">{r.tests?.title || '—'}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-sm font-black text-slate-900 group-hover:text-brand transition-colors">
+                                                {r.tests?.title || '—'}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4">
                                             <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">
                                                 {r.tests?.type || '—'}

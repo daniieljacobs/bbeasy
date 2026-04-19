@@ -94,12 +94,17 @@ export default function LeaderboardPage() {
                 entry.percentile = Math.round((below / sortedByScore.length) * 100);
             });
 
+            // LOGS
+            console.log('lb avgScore', currentUserEntry?.avgScore);
+            console.log('lb universe size', sortedByScore.length);
+
             return built;
         }
 
         setWeekData(buildEntries(weekResults || []));
         setAllTimeData(buildEntries(allResults));
         setLoading(false);
+
     }
 
     const activeData = period === 'week' ? weekData : allTimeData;
