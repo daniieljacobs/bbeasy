@@ -233,7 +233,7 @@ export default function LandingPage() {
   ];
 
   const proFeatures = [
-    'Randomised mock exams (unlimited attempts)',
+    'Unlimited mock exams',
     'Personalised practice drills',
     'Spider graph by subject',
     'Average score & live percentile',
