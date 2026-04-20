@@ -10,7 +10,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const EXAM_PASS_EXPIRY = new Date('2025-07-31T23:59:59Z');
+const EXAM_PASS_EXPIRY = new Date('2026-07-31T23:59:59Z');
 
 export async function POST(req: NextRequest) {
     const body = await req.text();
@@ -40,14 +40,15 @@ export async function POST(req: NextRequest) {
 
                 if (isSubscription && session.subscription) {
                     const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+                    const item = sub.items.data[0];
                     await supabase.from('subscriptions').upsert({
                         user_id: userId,
                         stripe_customer_id: session.customer as string,
                         stripe_subscription_id: sub.id,
                         plan: 'monthly',
                         status: 'active',
-                        current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-                        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+                        current_period_start: new Date(item.current_period_start * 1000).toISOString(),
+                        current_period_end: new Date(item.current_period_end * 1000).toISOString(),
                     }, { onConflict: 'stripe_subscription_id' });
 
                     await supabase.from('profiles').update({ role: 'pro' }).eq('id', userId);
@@ -73,11 +74,12 @@ export async function POST(req: NextRequest) {
             // ── Monthly subscription updated (e.g. renewal, payment failed) ──
             case 'customer.subscription.updated': {
                 const sub = event.data.object as Stripe.Subscription;
+                const item = sub.items.data[0];
                 await supabase.from('subscriptions')
                     .update({
                         status: sub.status === 'active' ? 'active' : sub.status,
-                        current_period_start: new Date(sub.current_period_start * 1000).toISOString(),
-                        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+                        current_period_start: new Date(item.current_period_start * 1000).toISOString(),
+                        current_period_end: new Date(item.current_period_end * 1000).toISOString(),
                     })
                     .eq('stripe_subscription_id', sub.id);
                 break;
