@@ -13,11 +13,14 @@ export async function POST(req: NextRequest) {
     try {
         const { userId } = await req.json();
 
-        const { data: subscription } = await supabase
+        const { data: subscriptions } = await supabase
             .from('subscriptions')
             .select('stripe_customer_id')
             .eq('user_id', userId)
-            .single();
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        const subscription = subscriptions?.[0];
 
         if (!subscription?.stripe_customer_id) {
             return NextResponse.json({ error: 'No customer found' }, { status: 404 });

@@ -231,7 +231,13 @@ export default function ProfilePage() {
                 body: JSON.stringify({ userId }),
             });
             const data = await res.json();
-            if (data.url) window.location.href = data.url;
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert(data.error || 'Could not open billing portal. Please try again.');
+            }
+        } catch {
+            alert('Something went wrong. Please try again.');
         } finally {
             setLoadingManage(false);
         }
