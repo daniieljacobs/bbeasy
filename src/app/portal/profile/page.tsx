@@ -4,7 +4,7 @@ import { useEffect, useState, useContext } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Zap, Target, Trophy, CheckCircle, ArrowUpRight, Lock } from 'lucide-react';
+import { Zap, Target, Trophy, CheckCircle, ArrowUpRight, Lock, Loader2, CreditCard } from 'lucide-react';
 import { RoleContext } from '@/app/portal/layout';
 
 const SUBJECTS = ['math', 'english', 'economics'] as const;
@@ -92,12 +92,15 @@ function RadarChart({ data }: { data: Record<string, number> }) {
 }
 
 export default function ProfilePage() {
+    const [userId, setUserId] = useState<string | null>(null);
     const [profile, setProfile] = useState<any>(null);
+    const [subscription, setSubscription] = useState<any>(null);
     const [stats, setStats] = useState({ totalPoints: 0, testsCompleted: 0, avgScore: 0 });
     const [testHistory, setTestHistory] = useState<any[]>([]);
     const [subjectData, setSubjectData] = useState<Record<string, Record<string, number>>>({});
     const [percentile, setPercentile] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingManage, setLoadingManage] = useState(false);
     const router = useRouter();
 
     const { isPro } = useContext(RoleContext);
@@ -107,6 +110,7 @@ export default function ProfilePage() {
     async function fetchAll() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push('/auth/login'); return; }
+        setUserId(user.id);
 
         const { data: profileData } = await supabase
             .from('profiles')
@@ -115,6 +119,18 @@ export default function ProfilePage() {
             .single();
 
         if (profileData) setProfile(profileData);
+
+        if (profileData?.role === 'pro' || profileData?.role === 'admin') {
+            const { data: sub } = await supabase
+                .from('subscriptions')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+            if (sub) setSubscription(sub);
+        }
 
         const { data: results } = await supabase
             .from('test_results')
@@ -205,6 +221,22 @@ export default function ProfilePage() {
         setLoading(false);
     }
 
+    async function handleManage() {
+        if (!userId) return;
+        setLoadingManage(true);
+        try {
+            const res = await fetch('/api/stripe/portal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url;
+        } finally {
+            setLoadingManage(false);
+        }
+    }
+
     if (loading) return (
         <div className="flex items-center justify-center min-h-[60vh]">
             <div className="flex flex-col items-center gap-3 font-mono">
@@ -241,7 +273,7 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-slate-400 text-sm mt-2">{profile?.full_name}</p>
                 </div>
-                {!isPro && (
+                {!isPro ? (
                     <a
                         href="/portal/membership"
                         className="group flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-brand hover:text-slate-900 transition-colors"
@@ -249,6 +281,15 @@ export default function ProfilePage() {
                         Upgrade to Pro
                         <ArrowUpRight size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </a>
+                ) : subscription?.plan === 'monthly' && (
+                    <button
+                        onClick={handleManage}
+                        disabled={loadingManage}
+                        className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors disabled:opacity-40"
+                    >
+                        {loadingManage ? <Loader2 size={11} className="animate-spin" /> : <CreditCard size={11} />}
+                        Manage Subscription
+                    </button>
                 )}
             </motion.div>
 
