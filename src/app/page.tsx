@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Mail } from 'lucide-react';
+import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Mail, BookOpen, Layers } from 'lucide-react';
 
 // ── RADAR CHART ──
 function RadarChart({ data }: { data: Record<string, number> }) {
@@ -58,7 +58,7 @@ function RadarChart({ data }: { data: Record<string, number> }) {
   );
 }
 
-// ── LEADERBOARD (full-width table) ──
+// ── LEADERBOARD PREVIEW ──
 function LeaderboardPreview() {
   const rows = [
     { rank: 1, name: 'vienna_pro', score: 94, exams: 18, top: 1 },
@@ -124,11 +124,10 @@ function SectionDots({ current, total, onClick }: { current: number; total: numb
   );
 }
 
-// ── MAIN PAGE ──
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentSection, setCurrentSection] = useState(0);
-  const TOTAL_SECTIONS = 5;
+  const TOTAL_SECTIONS = 6;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -146,7 +145,6 @@ export default function LandingPage() {
     if (!el) return;
 
     let cancelled = false;
-
     const cancel = () => { cancelled = true; };
     el.addEventListener('wheel', cancel, { once: true, passive: true });
     el.addEventListener('touchstart', cancel, { once: true, passive: true });
@@ -202,11 +200,11 @@ export default function LandingPage() {
 
   const demoStats = {
     "Logic": 85,
-    "Algebra & Equations": 62,
+    "Algebra": 62,
     "Functions": 92,
     "Calculus": 48,
-    "Financial Mathematics": 75,
-    "Probability & Statistics": 21
+    "Finance": 75,
+    "Probability": 21
   };
 
   const features = [
@@ -216,9 +214,9 @@ export default function LandingPage() {
       desc: "Multi-statement questions built to match the exact BBE exam structure.",
     },
     {
-      icon: <BarChart3 size={16} className="text-brand" />,
-      title: "Subject Analytics",
-      desc: "Identify weak spots across Economics, Maths, and English at a glance.",
+      icon: <Layers size={16} className="text-blue-900" />,
+      title: "WiseFlow Logic",
+      desc: "Environment logic modeled after the official assessment platform.",
     },
     {
       icon: <Trophy size={16} className="text-amber-500" />,
@@ -232,6 +230,12 @@ export default function LandingPage() {
     },
   ];
 
+  const freeFeatures = [
+    'Free full mock exams (unlimited attempts)',
+    'Starter self-assessment',
+    'Prep points & leaderboard',
+  ];
+
   const proFeatures = [
     'Unlimited mock exams',
     'Personalised practice drills',
@@ -239,12 +243,6 @@ export default function LandingPage() {
     'Average score & live percentile',
     'Leaderboard ranking',
     'Weak-area targeting',
-  ];
-
-  const freeFeatures = [
-    'Free full mock exams (unlimited attempts)',
-    'Starter self-assessment',
-    'Prep points & leaderboard',
   ];
 
   return (
@@ -280,7 +278,7 @@ export default function LandingPage() {
                 <motion.h1 {...v(0.1)} className="text-6xl font-black text-slate-900 tracking-tight leading-[0.95] mb-8">
                   Ace the BBE.
                   <br />
-                  <span className="text-brand">Free to start.</span>
+                  <span className="text-brand">100+ Tests run.</span>
                 </motion.h1>
                 <motion.div {...v(0.2)} className="flex items-center gap-3">
                   <Link href="/auth/register" className="flex items-center gap-2 px-8 py-3.5 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors shadow-lg shadow-brand/20">
@@ -292,7 +290,6 @@ export default function LandingPage() {
                 </motion.div>
               </div>
               <motion.div {...v(0.15)} className="space-y-6">
-                {/* Quote */}
                 <div className="border-l-2 border-brand/30 pl-4">
                   <p className="text-sm italic text-slate-500 leading-relaxed">
                     "A curious peculiarity of our memory is that things are impressed better by active than by passive repetition."
@@ -301,9 +298,8 @@ export default function LandingPage() {
                     William James, 1890
                   </p>
                 </div>
-                {/* Description */}
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  BBEasy gives you unlimited mock exams and topic-specific drills, for a fraction of the €300–500 price tag of traditional prep courses.
+                  The only digitally-native simulator for the WU BBE. Modelled strictly after the 2026 syllabus and official literature.
                 </p>
                 <div className="flex items-center gap-6 border-t border-slate-200 pt-6">
                   <div>
@@ -312,13 +308,8 @@ export default function LandingPage() {
                   </div>
                   <div className="w-px h-10 bg-slate-200" />
                   <div>
-                    <p className="text-3xl font-black text-slate-900">€20</p>
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">vs €300–500 elsewhere</p>
-                  </div>
-                  <div className="w-px h-10 bg-slate-200" />
-                  <div>
-                    <p className="text-3xl font-black text-slate-900">3</p>
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">subjects covered</p>
+                    <p className="text-3xl font-black text-slate-900">100+</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">simulations completed</p>
                   </div>
                 </div>
               </motion.div>
@@ -330,7 +321,7 @@ export default function LandingPage() {
         <section className="snap-start h-screen flex flex-col justify-center px-6 border-y border-slate-200 bg-white">
           <div className="max-w-6xl mx-auto w-full">
             <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-10">
-              What's included
+              Platform Features
             </motion.p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200">
               {features.map((f, i) => (
@@ -344,11 +335,98 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S3: ANALYTICS ── */}
+        {/* ── S3: FULL SYLLABUS ANATOMY ── */}
+        <section className="snap-start min-h-screen flex flex-col justify-center px-6 bg-white border-b border-slate-200">
+          <div className="max-w-6xl mx-auto w-full py-20">
+            <motion.div {...v(0.05)} className="mb-12">
+              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-brand mb-4">Exhaustive Blueprint</p>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-6">
+                2026 Syllabus Coverage.
+              </h2>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+              {/* BUSINESS */}
+              <motion.div {...v(0.1)} className="space-y-6">
+                <div className="pb-4 border-b-2 border-slate-900">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Section 01</p>
+                  <h3 className="text-lg font-black text-slate-900">Business & Economy</h3>
+                </div>
+                <ul className="space-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-tight list-none">
+                  <li>• Economic & Market</li>
+                  <li>• Business Environment</li>
+                  <li>• Legal & Finance</li>
+                  <li>• Marketing</li>
+                  <li>• Accounting & Ratio Analysis</li>
+                </ul>
+                <p className="text-[8px] text-slate-300 italic">Ref: B. Fuhrmann (2019)</p>
+              </motion.div>
+
+              {/* MATHS - FULL EXHAUSTIVE LIST */}
+              <motion.div {...v(0.15)} className="space-y-6">
+                <div className="pb-4 border-b-2 border-brand">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand">Section 02</p>
+                  <h3 className="text-lg font-black text-slate-900">Mathematics</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                  <div>
+                    <p className="text-slate-900 mb-1 border-b border-slate-100">Logic</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-900 mb-1 border-b border-slate-100">Algebra & Equations</p>
+                    <p className="text-[9px] lowercase font-normal leading-tight text-slate-400">
+                      Elementary Algebra, Equations, Linear Equations (2 unknowns), Inequalities.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-900 mb-1 border-b border-slate-100">Functions</p>
+                    <p className="text-[9px] lowercase font-normal leading-tight text-slate-400">
+                      Linear/Quadratic, Power, Polynomial, Exponential & Logarithmic.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-900 mb-1 border-b border-slate-100">Calculus</p>
+                    <p className="text-[9px] lowercase font-normal leading-tight text-slate-400">
+                      Differentiation & Single Variable Optimisation.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-900 mb-1 border-b border-slate-100">Financial Math</p>
+                    <p className="text-[9px] lowercase font-normal leading-tight text-slate-400">
+                      Elementary Financial Mathematics.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-900 mb-1 border-b border-slate-100">Probability & Stats</p>
+                    <p className="text-[9px] lowercase font-normal leading-tight text-slate-400">
+                      Elementary Probability, Binomial Distribution.
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[8px] text-slate-300 italic">Ref: Sydsaeter et al. (2022)</p>
+              </motion.div>
+
+              {/* ENGLISH */}
+              <motion.div {...v(0.2)} className="space-y-6">
+                <div className="pb-4 border-b-2 border-slate-900">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Section 03</p>
+                  <h3 className="text-lg font-black text-slate-900">English</h3>
+                </div>
+                <ul className="space-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-tight list-none">
+                  <li>• Vocabulary</li>
+                  <li>• Grammar</li>
+                  <li>• Reading Comprehension</li>
+                </ul>
+                <p className="text-[8px] text-slate-300 italic">WU BBE Standard Assessment</p>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── S4: ANALYTICS ── */}
         <section className="snap-start h-screen flex flex-col justify-center px-6 bg-slate-50">
           <div className="max-w-6xl mx-auto w-full grid md:grid-cols-2 gap-16 items-center">
-            <motion.div {...v(0.1)} className="flex justify-center relative">
-              <div className="absolute inset-0 bg-brand/5 rounded-full blur-3xl scale-75 -z-10" />
+            <motion.div {...v(0.1)} className="flex justify-center">
               <div className="bg-white p-8 border border-slate-200 shadow-2xl w-full max-w-sm">
                 <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
                   <p className="text-xs font-black text-slate-900">Performance Matrix</p>
@@ -363,22 +441,14 @@ export default function LandingPage() {
               <motion.h2 {...v(0.1)} className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-6">
                 See exactly where<br />to focus.
               </motion.h2>
-              <motion.p {...v(0.15)} className="text-slate-500 text-sm leading-relaxed mb-8 max-w-md">
-                Stop guessing what to study. Your Pro dashboard breaks results into granular categories so you know, before exam day, whether to drill Calculus or shore up English Vocabulary.
+              <motion.p {...v(0.15)} className="text-slate-500 text-sm leading-relaxed max-w-md">
+                Stop guessing. Your dashboard breaks results into granular categories so you know whether to drill Calculus or shore up English Vocabulary.
               </motion.p>
-              <motion.ul {...v(0.2)} className="space-y-4">
-                {['Real-time radar charts', 'Weak area drill generation', 'Progress tracking over time'].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.15em] text-slate-700">
-                    <div className="w-1.5 h-1.5 bg-brand rotate-45 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </motion.ul>
             </div>
           </div>
         </section>
 
-        {/* ── S4: LEADERBOARD ── */}
+        {/* ── S5: LEADERBOARD ── */}
         <section className="snap-start h-screen flex flex-col justify-center px-6 bg-white border-y border-slate-200">
           <div className="max-w-6xl mx-auto w-full grid md:grid-cols-[1fr_1.7fr] gap-16 items-center">
             <div>
@@ -386,24 +456,20 @@ export default function LandingPage() {
                 Know your<br />percentile.
               </motion.h2>
               <motion.p {...v(0.2)} className="text-slate-500 text-sm leading-relaxed mb-8 max-w-sm">
-                WU admits roughly the top 6–7% of applicants. Track your live rank against real users so you always know exactly how far you have to climb.
+                WU admits the top 6–7% of applicants. Track your rank against real performance data so you know how far you have to climb.
               </motion.p>
-              <motion.div {...v(0.3)} className="inline-block px-6 py-4 border border-slate-200 bg-slate-50">
+              <div className="inline-block px-6 py-4 border border-slate-200 bg-slate-50">
                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-brand mb-1">Entrance cutoff</p>
                 <p className="text-2xl font-black text-slate-900">TOP 7%</p>
-              </motion.div>
+              </div>
             </div>
             <motion.div {...v(0.1)} className="bg-slate-50 border border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
-                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Live Rankings</p>
-                <Trophy size={14} className="text-amber-400" />
-              </div>
               <LeaderboardPreview />
             </motion.div>
           </div>
         </section>
 
-        {/* ── S5: PRICING & FOOTER ── */}
+        {/* ── S6: PRICING (Reverted to Original Style) ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-6 bg-slate-50">
           <div className="max-w-6xl mx-auto w-full py-20">
             <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-2">Pricing</motion.p>
@@ -445,20 +511,11 @@ export default function LandingPage() {
               </motion.div>
             </div>
 
-            <footer className="pt-10 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex flex-col items-center md:items-start gap-1">
-                <span className="font-black text-sm tracking-tight">BB<span className="text-brand">EASY</span></span>
-                <p className="text-[8px] uppercase tracking-[0.3em] text-slate-300">WU Wien · BBE 2026</p>
-              </div>
-              <div className="flex items-center gap-8">
-                <a href="mailto:hello@bbeasy.at" className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-brand transition-colors">
-                  <Mail size={12} /> hello@bbeasy.at
-                </a>
-                <div className="flex gap-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
-                  <Link href="/about" className="hover:text-slate-900 transition-colors">About</Link>
-                  <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms</Link>
-                  <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy</Link>
-                </div>
+            <footer className="pt-10 border-t border-slate-200 flex justify-between gap-6">
+              <span className="font-black text-sm tracking-tight">BB<span className="text-brand">EASY</span></span>
+              <div className="flex gap-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
+                <Link href="/terms">Terms</Link>
+                <Link href="/privacy">Privacy</Link>
               </div>
             </footer>
           </div>

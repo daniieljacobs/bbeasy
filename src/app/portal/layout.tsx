@@ -220,7 +220,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                                     <Link
                                         key={link.href}
                                         href={link.href}
-                                        className={`px-4 py-1.5 rounded-lg text-xs font-bold tracking-widest uppercase transition-all ${isActive
+                                        className={`px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-all ${isActive
                                             ? 'text-slate-900 bg-slate-100'
                                             : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                                             }`}
@@ -261,7 +261,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                             {profile && (
                                 <Link
                                     href="/portal/profile"
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition ${pathname === '/portal/profile'
+                                    className={`flex items-center gap-2 px-3 py-1.5  border transition ${pathname === '/portal/profile'
                                         ? 'bg-slate-100 border-slate-200'
                                         : 'bg-slate-50 border-slate-100 hover:border-slate-200'
                                         }`}
