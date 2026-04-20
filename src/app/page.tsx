@@ -257,6 +257,7 @@ export default function LandingPage() {
         <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-50/80 backdrop-blur-md border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
             <span className="font-black text-lg tracking-tight">BB<span className="text-brand">EASY</span></span>
+
             <div className="flex items-center gap-1">
               <Link href="/about" className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">About</Link>
               <Link href="/auth/login" className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">Login</Link>
@@ -266,13 +267,23 @@ export default function LandingPage() {
             </div>
           </div>
         </nav>
-
         {/* ── S1: HERO ── */}
         <section className="snap-start h-screen flex flex-col justify-center px-6">
           <div className="max-w-6xl mx-auto w-full">
-            <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-brand mb-6">
-              WU Wien · BBE Entrance Exam · 2026
-            </motion.p>
+            {/* BADGE ROW */}
+            <div className="flex items-center gap-4 mb-6">
+              <motion.p {...v(0.05)} className="text-[9px] font-black uppercase tracking-[0.4em] text-brand">
+                WU Wien · BBE Entrance Exam · 2026
+              </motion.p>
+              <motion.span
+                {...v(0.06)}
+                className="px-2 py-0.5 border border-brand/20 bg-brand/5 text-brand text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5"
+              >
+                <span className="w-1 h-1 bg-brand rounded-full animate-pulse" />
+                Early Access
+              </motion.span>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-end">
               <div>
                 <motion.h1 {...v(0.1)} className="text-6xl font-black text-slate-900 tracking-tight leading-[0.95] mb-8">
@@ -280,6 +291,7 @@ export default function LandingPage() {
                   <br />
                   <span className="text-brand">100+ Tests run.</span>
                 </motion.h1>
+                {/* ... rest of your buttons ... */}
                 <motion.div {...v(0.2)} className="flex items-center gap-3">
                   <Link href="/auth/register" className="flex items-center gap-2 px-8 py-3.5 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors shadow-lg shadow-brand/20">
                     Start for free <ArrowUpRight size={11} />
@@ -289,7 +301,9 @@ export default function LandingPage() {
                   </Link>
                 </motion.div>
               </div>
+
               <motion.div {...v(0.15)} className="space-y-6">
+                {/* ... rest of your description / quote / stats ... */}
                 <div className="border-l-2 border-brand/30 pl-4">
                   <p className="text-sm italic text-slate-500 leading-relaxed">
                     "A curious peculiarity of our memory is that things are impressed better by active than by passive repetition."

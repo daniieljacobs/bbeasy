@@ -211,6 +211,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                         <Link href="/portal/dashboard" className="font-black text-lg tracking-tight shrink-0">
                             BB<span className="text-brand">EASY</span>
                         </Link>
+                        <motion.span
+                            className="px-2 py-0.5 border border-brand/20 bg-brand/5 text-brand text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5"
+                        >
+                            <span className="w-1 h-1 bg-brand rounded-full animate-pulse" />
+                            Early Access
+                        </motion.span>
 
                         {/* ── DESKTOP NAV ── */}
                         <div className="hidden md:flex items-center gap-1 flex-1">
@@ -399,39 +405,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 </main>
 
                 <ExamCountdown />
-
-                {!isPro && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.3, ease: [0.22, 1, 0.36, 1] as const }}
-                        className="fixed bottom-6 right-6 z-50"
-                    >
-                        <Link
-                            href="/portal/membership"
-                            className="group flex flex-col gap-3 px-6 py-5 bg-white border border-slate-200 hover:border-brand transition-all duration-200 hover:shadow-lg shadow-sm"
-                        >
-                            <span className="flex items-center justify-between gap-6">
-                                <span className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.25em] text-brand">
-                                    <Crown size={11} /> Unlock Pro
-                                </span>
-                                <ArrowUpRight
-                                    size={11}
-                                    className="text-slate-300 group-hover:text-brand group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
-                                />
-                            </span>
-                            <div className="w-full h-px bg-slate-100" />
-                            <ul className="flex flex-col gap-1.5">
-                                {['Unlimited exams', 'Know your weak spots', 'See your percentile'].map(f => (
-                                    <li key={f} className="flex items-center gap-2 text-[9px] text-slate-400 uppercase tracking-[0.15em]">
-                                        <span className="w-1 h-1 bg-brand opacity-40 shrink-0" />
-                                        {f}
-                                    </li>
-                                ))}
-                            </ul>
-                        </Link>
-                    </motion.div>
-                )}
             </div>
         </RoleContext.Provider>
     );
