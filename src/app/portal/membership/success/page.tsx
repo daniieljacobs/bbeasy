@@ -1,10 +1,17 @@
 "use client";
 
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 
+declare function gtag(...args: unknown[]): void
+
 export default function MembershipSuccessPage() {
+    useEffect(() => {
+        gtag('event', 'conversion', { send_to: 'AW-18089399359/UtQKCNOc9p8cEL-o2bFD' });
+    }, []);
+
     return (
         <div className="flex items-center justify-center min-h-[70vh] px-6 font-mono">
             <motion.div
