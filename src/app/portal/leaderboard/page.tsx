@@ -8,7 +8,6 @@ import { Trophy, Zap, Target, Lock } from 'lucide-react';
 import { RoleContext } from '@/app/portal/layout';
 
 type Tab = 'points' | 'score' | 'percentile';
-type Period = 'week' | 'alltime';
 
 interface LeaderboardEntry {
     userId: string;
@@ -22,13 +21,11 @@ interface LeaderboardEntry {
 const fadeUp = (delay = 0) => ({
     initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1], delay }
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const, delay }
 });
 
 export default function LeaderboardPage() {
     const [tab, setTab] = useState<Tab>('points');
-    const [period, setPeriod] = useState<Period>('week');
-    const [weekData, setWeekData] = useState<LeaderboardEntry[]>([]);
     const [allTimeData, setAllTimeData] = useState<LeaderboardEntry[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const { isPro: isProContext } = useContext(RoleContext);
@@ -51,15 +48,7 @@ export default function LeaderboardPage() {
             .single();
         if (profileData) setLocalRole(profileData.role);
 
-        const now = new Date();
-        const dayOfWeek = now.getDay();
-        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - daysFromMonday);
-        weekStart.setHours(0, 0, 0, 0);
-
-        const [{ data: weekResults }, { data: allResults }, { data: profiles }] = await Promise.all([
-            supabase.from('test_results').select('user_id, score, points_awarded').gte('completed_at', weekStart.toISOString()).eq('is_practice', false),
+        const [{ data: allResults }, { data: profiles }] = await Promise.all([
             supabase.from('test_results').select('user_id, score, points_awarded').eq('is_practice', false),
             supabase.from('profiles').select('id, username, full_name'),
         ]);
@@ -101,13 +90,12 @@ export default function LeaderboardPage() {
             return built;
         }
 
-        setWeekData(buildEntries(weekResults || []));
         setAllTimeData(buildEntries(allResults));
         setLoading(false);
 
     }
 
-    const activeData = period === 'week' ? weekData : allTimeData;
+    const activeData = allTimeData;
     const sorted = [...activeData].sort((a, b) => {
         if (tab === 'points') return b.totalPoints - a.totalPoints;
         if (tab === 'score') return b.avgScore - a.avgScore;
@@ -137,24 +125,7 @@ export default function LeaderboardPage() {
             </motion.div>
 
             {/* ── CONTROLS ── */}
-            <motion.div {...fadeUp(0.08)} className="flex items-center justify-between mb-8">
-                {/* Period toggle */}
-                <div className="flex items-center gap-px border border-slate-200">
-                    {(['week', 'alltime'] as Period[]).map(p => (
-                        <button
-                            key={p}
-                            onClick={() => setPeriod(p)}
-                            className={`px-5 py-2 text-[9px] font-black uppercase tracking-[0.2em] transition-colors
-                                ${period === p
-                                    ? 'bg-slate-900 text-white'
-                                    : 'text-slate-400 hover:text-slate-600 bg-white'
-                                }`}
-                        >
-                            {p === 'week' ? 'This Week' : 'All Time'}
-                        </button>
-                    ))}
-                </div>
-
+            <motion.div {...fadeUp(0.08)} className="flex items-center justify-end mb-8">
                 {/* Tab selector */}
                 <div className="flex items-center gap-px border border-slate-200">
                     {([
@@ -200,7 +171,7 @@ export default function LeaderboardPage() {
                 {sorted.length === 0 ? (
                     <div className="py-24 text-center">
                         <p className="text-[9px] uppercase tracking-[0.4em] text-slate-300 mb-2">
-                            {period === 'week' ? 'No activity this week yet' : 'No data yet'}
+                            No data yet
                         </p>
                     </div>
                 ) : (
@@ -282,7 +253,7 @@ export default function LeaderboardPage() {
 
             {/* ── FOOTER NOTE ── */}
             <motion.p {...fadeUp(0.2)} className="text-center text-[8px] uppercase tracking-[0.3em] text-slate-300 mt-6">
-                {period === 'week' ? 'Resets every Monday' : 'All time'} · Practice sessions excluded
+                All time · Practice sessions excluded
             </motion.p>
         </div>
     );

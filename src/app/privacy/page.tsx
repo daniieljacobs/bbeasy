@@ -45,9 +45,10 @@ const SECTIONS = [
     {
         title: "Cookies and tracking",
         content: [
-            "We do not use tracking or analytics cookies and we do not use Google Analytics or any third-party analytics tools.",
             "We use strictly necessary session cookies to keep you logged in. These are deleted when you close your browser or log out.",
-            "Stripe, our payment processor, may set its own cookies during checkout. These are governed by Stripe's privacy policy.",
+            "With your consent, we use Google Ads (Google LLC) to measure the effectiveness of our advertising campaigns. Google Ads may set cookies and collect data about your visit to help us understand how users reach our platform. This data may be used to show you relevant ads on Google's advertising network. Google's privacy policy is available at policies.google.com/privacy.",
+            "We use Google Consent Mode v2. This means no advertising or analytics cookies are set until you explicitly accept via our cookie banner. You can withdraw your consent at any time by clearing your browser's local storage or cookies.",
+            "Stripe, our payment processor, may set its own cookies during checkout. These are governed by Stripe's privacy policy at stripe.com/privacy.",
         ],
     },
     {

@@ -12,6 +12,7 @@ export default function RegisterPage() {
     const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const router = useRouter();
 
     const handleRegister = async (e: React.FormEvent) => {
@@ -131,9 +132,28 @@ export default function RegisterPage() {
                     />
                 </div>
 
+                <label className="flex items-start gap-3 cursor-pointer mt-2">
+                    <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-0.5 accent-brand shrink-0"
+                    />
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-slate-400 leading-relaxed">
+                        I agree to the{' '}
+                        <Link href="/privacy" target="_blank" className="text-brand font-black hover:text-slate-900 transition-colors">
+                            Privacy Policy
+                        </Link>
+                        {' '}and{' '}
+                        <Link href="/terms" target="_blank" className="text-brand font-black hover:text-slate-900 transition-colors">
+                            Terms of Service
+                        </Link>
+                    </span>
+                </label>
+
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !agreedToTerms}
                     className="w-full py-3 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors disabled:opacity-40 mt-2"
                 >
                     {loading ? 'Creating account...' : 'Create Account'}
