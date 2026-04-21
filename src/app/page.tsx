@@ -382,7 +382,7 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  The only digitally-native simulator for the WU BBE. Modelled strictly after the 2026 syllabus and official literature.
+                  The digitally-native simulator for the WU BBE entrance exam. Modelled strictly after the 2026 syllabus and official literature.
                 </p>
                 <div className="flex items-center gap-5 sm:gap-6 border-t border-slate-200 pt-5 sm:pt-6">
                   <div>
