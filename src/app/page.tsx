@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { Timer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Menu, X, Layers } from 'lucide-react';
@@ -131,6 +132,74 @@ function SectionDots({ current, total, onClick }: { current: number; total: numb
   );
 }
 
+function ExamCountdown({ compact = false }: { compact?: boolean }) {
+  const [mounted, setMounted] = useState(false);
+  const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    setMounted(true);
+    const target = new Date('2026-06-30T03:00:00').getTime();
+    const update = () => {
+      const diff = Math.max(0, target - Date.now());
+      setTime({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000),
+      });
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!mounted) return null;
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 border border-slate-200 bg-white w-fit">
+        <Timer size={10} className="text-brand shrink-0" />
+        <span className="text-[10px] font-black tabular-nums text-slate-900 tracking-wide">
+          {time.days}d · {pad(time.hours)}h · {pad(time.minutes)}m · {pad(time.seconds)}s
+        </span>
+        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">to exam</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-l-2 border-brand/30 pl-4">
+      <div className="flex items-center gap-1.5 mb-1">
+        <Timer size={11} className="text-brand" />
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-brand">Exam Countdown</p>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <div className="text-center">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-none">{time.days}</p>
+          <p className="text-[8px] uppercase tracking-widest text-slate-400 mt-0.5">days</p>
+        </div>
+        <span className="text-slate-300 font-black text-lg mb-3">:</span>
+        <div className="text-center">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-none">{pad(time.hours)}</p>
+          <p className="text-[8px] uppercase tracking-widest text-slate-400 mt-0.5">hrs</p>
+        </div>
+        <span className="text-slate-300 font-black text-lg mb-3">:</span>
+        <div className="text-center">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-none">{pad(time.minutes)}</p>
+          <p className="text-[8px] uppercase tracking-widest text-slate-400 mt-0.5">min</p>
+        </div>
+        <span className="text-slate-300 font-black text-lg mb-3">:</span>
+        <div className="text-center">
+          <p className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums leading-none">{pad(time.seconds)}</p>
+          <p className="text-[8px] uppercase tracking-widest text-slate-400 mt-0.5">sec</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentSection, setCurrentSection] = useState(0);
@@ -230,8 +299,8 @@ export default function LandingPage() {
     },
     {
       icon: <Layers size={16} className="text-blue-900" />,
-      title: "WiseFlow Logic",
-      desc: "Environment logic modeled after the official assessment platform.",
+      title: "Official Exam Format",
+      desc: "Questions built to match the exact structure and logic of the real BBE assessment.",
     },
     {
       icon: <Trophy size={16} className="text-amber-500" />,
@@ -329,25 +398,15 @@ export default function LandingPage() {
         {/* ── S1: HERO ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 pt-20 pb-12 sm:pt-14 sm:pb-0">
           <div className="max-w-6xl mx-auto w-full">
-            {/* BADGE ROW */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
-              <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand">
-                WU Wien · BBE · 2026
-              </motion.p>
-              <motion.span
-                {...v(0.06)}
-                className="px-2 py-0.5 border border-brand/20 bg-brand/5 text-brand text-[9px] sm:text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5"
-              >
-                <span className="w-1 h-1 bg-brand rounded-full animate-pulse" />
-                Early Access
-              </motion.span>
-            </div>
+            <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-5 sm:mb-6">
+              WU Wien · BBE · 2026
+            </motion.p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-end">
               <div>
                 <motion.h1
                   {...v(0.1)}
-                  className="text-[2.5rem] leading-[1.02] sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight md:leading-[0.95] mb-6 sm:mb-8"
+                  className="text-[2.5rem] leading-[1.02] sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight md:leading-[0.95] mb-5 sm:mb-8"
                 >
                   Get a Free
                   <br />
@@ -355,6 +414,11 @@ export default function LandingPage() {
                   <br />
                   <span className="text-brand">BBE Entrance Exam.</span>
                 </motion.h1>
+
+                {/* Compact countdown — mobile only */}
+                <motion.div {...v(0.15)} className="md:hidden mb-5">
+                  <ExamCountdown compact />
+                </motion.div>
 
                 <motion.div {...v(0.2)} className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <Link
@@ -365,34 +429,31 @@ export default function LandingPage() {
                   </Link>
                   <Link
                     href="/auth/login"
-                    className="flex items-center justify-center px-6 sm:px-8 py-3.5 border border-slate-200 text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-slate-400 hover:text-slate-900 transition-colors"
+                    className="hidden sm:flex items-center justify-center px-6 sm:px-8 py-3.5 border border-slate-200 text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:border-slate-400 hover:text-slate-900 transition-colors"
                   >
                     Sign in
                   </Link>
                 </motion.div>
+                <motion.p {...v(0.25)} className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-3">
+                  Free to start · No credit card required
+                </motion.p>
               </div>
 
-              <motion.div {...v(0.15)} className="space-y-5 sm:space-y-6">
-                <div className="border-l-2 border-brand/30 pl-4">
-                  <p className="text-sm italic text-slate-500 leading-relaxed">
-                    "A curious peculiarity of our memory is that things are impressed better by active than by passive repetition."
-                  </p>
-                  <p className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-300 mt-2">
-                    William James, 1890
-                  </p>
-                </div>
+              {/* Right column — desktop only */}
+              <motion.div {...v(0.15)} className="hidden md:flex flex-col space-y-6">
+                <ExamCountdown />
                 <p className="text-slate-500 text-sm leading-relaxed">
                   The digitally-native simulator for the WU BBE entrance exam. Modelled strictly after the 2026 syllabus and official literature.
                 </p>
-                <div className="flex items-center gap-5 sm:gap-6 border-t border-slate-200 pt-5 sm:pt-6">
+                <div className="flex items-center gap-6 border-t border-slate-200 pt-6">
                   <div>
                     <p className="text-3xl font-black text-slate-900">€0</p>
-                    <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">to start</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">to start</p>
                   </div>
                   <div className="w-px h-10 bg-slate-200" />
                   <div>
-                    <p className="text-3xl font-black text-slate-900">100+</p>
-                    <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">simulations run</p>
+                    <p className="text-3xl font-black text-slate-900">150+</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">exam questions</p>
                   </div>
                 </div>
               </motion.div>
@@ -406,12 +467,12 @@ export default function LandingPage() {
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-slate-400 mb-8 sm:mb-10">
               Platform Features
             </motion.p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-px bg-slate-200">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200">
               {features.map((f, i) => (
-                <motion.div key={i} {...v(0.1 + i * 0.05)} className="bg-white px-5 sm:px-6 py-8 sm:py-12 flex flex-col gap-3 sm:gap-4">
+                <motion.div key={i} {...v(0.1 + i * 0.05)} className="bg-white px-4 sm:px-6 py-6 sm:py-12 flex flex-col gap-2 sm:gap-4">
                   <div>{f.icon}</div>
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.15em]">{f.title}</h3>
-                  <p className="text-[12px] sm:text-[11px] text-slate-500 sm:text-slate-400 leading-relaxed">{f.desc}</p>
+                  <h3 className="text-[10px] sm:text-xs font-black text-slate-900 uppercase tracking-[0.15em]">{f.title}</h3>
+                  <p className="hidden sm:block text-[11px] text-slate-400 leading-relaxed">{f.desc}</p>
                 </motion.div>
               ))}
             </div>
@@ -457,31 +518,31 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <p className="text-slate-900 mb-1 border-b border-slate-100">Algebra & Equations</p>
-                    <p className="text-[10px] sm:text-[9px] lowercase font-normal leading-tight text-slate-400">
+                    <p className="hidden sm:block text-[9px] lowercase font-normal leading-tight text-slate-400">
                       Elementary Algebra, Equations, Linear Equations (2 unknowns), Inequalities.
                     </p>
                   </div>
                   <div>
                     <p className="text-slate-900 mb-1 border-b border-slate-100">Functions</p>
-                    <p className="text-[10px] sm:text-[9px] lowercase font-normal leading-tight text-slate-400">
+                    <p className="hidden sm:block text-[9px] lowercase font-normal leading-tight text-slate-400">
                       Linear/Quadratic, Power, Polynomial, Exponential & Logarithmic.
                     </p>
                   </div>
                   <div>
                     <p className="text-slate-900 mb-1 border-b border-slate-100">Calculus</p>
-                    <p className="text-[10px] sm:text-[9px] lowercase font-normal leading-tight text-slate-400">
+                    <p className="hidden sm:block text-[9px] lowercase font-normal leading-tight text-slate-400">
                       Differentiation & Single Variable Optimisation.
                     </p>
                   </div>
                   <div>
                     <p className="text-slate-900 mb-1 border-b border-slate-100">Financial Math</p>
-                    <p className="text-[10px] sm:text-[9px] lowercase font-normal leading-tight text-slate-400">
+                    <p className="hidden sm:block text-[9px] lowercase font-normal leading-tight text-slate-400">
                       Elementary Financial Mathematics.
                     </p>
                   </div>
                   <div>
                     <p className="text-slate-900 mb-1 border-b border-slate-100">Probability & Stats</p>
-                    <p className="text-[10px] sm:text-[9px] lowercase font-normal leading-tight text-slate-400">
+                    <p className="hidden sm:block text-[9px] lowercase font-normal leading-tight text-slate-400">
                       Elementary Probability, Binomial Distribution.
                     </p>
                   </div>
