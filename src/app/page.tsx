@@ -233,7 +233,7 @@ export default function LandingPage() {
   const [currentSection, setCurrentSection] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const TOTAL_SECTIONS = 7;
+  const TOTAL_SECTIONS = 8;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -464,7 +464,7 @@ export default function LandingPage() {
                   {...v(0.1)}
                   className="text-[2.5rem] leading-[1.02] sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight md:leading-[0.95] mb-5 sm:mb-6"
                 >
-                  Pass the WU BBE.
+                  Pass the WU BBE Exam.
                   <br />
                   <span className="text-brand">Without the guesswork.</span>
                 </motion.h1>
@@ -531,7 +531,61 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S2: FEATURES ── */}
+        {/* ── S2: ORIGIN / WHY BBEASY ── */}
+        <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-white border-y border-slate-200">
+          <div className="max-w-6xl mx-auto w-full">
+            <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-4">
+              Why BBEASY exists
+            </motion.p>
+            <motion.h2 {...v(0.08)} className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-[1.05] md:leading-none mb-10 sm:mb-12 max-w-3xl">
+              Made for one thing:<br className="hidden sm:block" /> repetition.
+            </motion.h2>
+
+            <div className="grid md:grid-cols-[1.2fr_1fr] gap-10 md:gap-16 items-start">
+              <motion.div {...v(0.12)} className="space-y-4">
+                <p className="text-slate-500 text-[13px] sm:text-[15px] leading-relaxed">
+                  BBEASY started because my partner is sitting the 2026 WU BBE. Looking for prep, we realised we didn't want a full course — we wanted to sit the exam again and again until the format and timing felt natural. Most options out there are excellent full curricula; they just weren't the shape of what we needed.
+                </p>
+                <p className="text-slate-500 text-[13px] sm:text-[15px] leading-relaxed">
+                  So I built what we were looking for: unlimited full mocks, granular feedback, one fair price. The method — repeating the exam until it's muscle memory — is what scored me 98.96%ile on my own university entrance exam, and it's grounded in decades of retrieval-practice research.
+                </p>
+                <Link
+                  href="/about"
+                  className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-brand hover:text-slate-900 transition-colors pt-3"
+                >
+                  Read the full story <ArrowUpRight size={10} />
+                </Link>
+              </motion.div>
+
+              {/* Trust stats */}
+              <motion.div {...v(0.18)} className="flex flex-col gap-px bg-slate-200 border border-slate-200">
+                <div className="bg-white p-5 sm:p-6">
+                  <div className="flex items-baseline gap-1">
+                    <p className="text-3xl sm:text-4xl font-black text-slate-900 leading-none tabular-nums">98.96</p>
+                    <p className="text-lg font-black text-brand leading-none">%ile</p>
+                  </div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-3">
+                    Creator's score · Masaryk Law entrance (CZ)
+                  </p>
+                </div>
+                <div className="bg-white p-5 sm:p-6">
+                  <p className="text-3xl sm:text-4xl font-black text-slate-900 leading-none">3 studies</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-3">
+                    Grounded in retrieval-practice research · Roediger &amp; Karpicke 2006 et al.
+                  </p>
+                </div>
+                <div className="bg-white p-5 sm:p-6">
+                  <p className="text-3xl sm:text-4xl font-black text-slate-900 leading-none">€40</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-3">
+                    Lifetime · unlimited reps · pay once
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── S3: FEATURES ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 sm:py-0 border-y border-slate-200 bg-white">
           <div className="max-w-6xl mx-auto w-full">
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-slate-400 mb-8 sm:mb-10">
@@ -549,7 +603,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S3: FULL SYLLABUS ANATOMY ── */}
+        {/* ── S4: FULL SYLLABUS ANATOMY ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 bg-white border-b border-slate-200">
           <div className="max-w-6xl mx-auto w-full py-20">
             <motion.div {...v(0.05)} className="mb-10 sm:mb-12">
@@ -637,7 +691,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S4: ANALYTICS ── */}
+        {/* ── S5: ANALYTICS ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-slate-50">
           <div className="max-w-6xl mx-auto w-full grid md:grid-cols-2 gap-10 md:gap-16 items-center">
             <div className="order-2 md:order-1">
@@ -662,7 +716,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S5: LEADERBOARD ── */}
+        {/* ── S6: LEADERBOARD ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-white border-y border-slate-200">
           <div className="max-w-6xl mx-auto w-full grid md:grid-cols-[1fr_1.7fr] gap-10 md:gap-16 items-center">
             <div>
@@ -683,7 +737,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S6: FAQ ── */}
+        {/* ── S7: FAQ ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-white border-b border-slate-200">
           <div className="max-w-3xl mx-auto w-full">
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-4">
@@ -707,7 +761,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S7: PRICING + FINAL CTA + FOOTER ── */}
+        {/* ── S8: PRICING + FINAL CTA + FOOTER ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 bg-slate-50">
           <div className="max-w-6xl mx-auto w-full py-20">
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-slate-400 mb-2">Pricing</motion.p>
