@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Timer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Menu, X, Layers } from 'lucide-react';
+import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Menu, X, Layers, Plus, Minus, ShieldCheck, Quote } from 'lucide-react';
 
 // ── RADAR CHART ──
 function RadarChart({ data }: { data: Record<string, number> }) {
@@ -70,8 +70,6 @@ function LeaderboardPreview() {
     { rank: 6, name: 'econqueen', score: 81, exams: 15, top: 9 },
   ];
 
-  // Mobile: # | User | Score | Percentile  (Exams hidden)
-  // Desktop: # | User | Score | Exams | Percentile
   const gridCls =
     "grid grid-cols-[1.5rem_1fr_3rem_4.5rem] sm:grid-cols-[2rem_1fr_4rem_4rem_5rem] gap-2 sm:gap-4 px-3 sm:px-4";
 
@@ -200,11 +198,42 @@ function ExamCountdown({ compact = false }: { compact?: boolean }) {
   );
 }
 
+// ── FAQ ITEM (accordion) ──
+function FaqItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean; onToggle: () => void }) {
+  return (
+    <div className="border-b border-slate-200">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-start justify-between gap-4 py-5 text-left group"
+        aria-expanded={open}
+      >
+        <span className="text-[13px] sm:text-sm font-black text-slate-900 tracking-tight leading-snug group-hover:text-brand transition-colors">
+          {q}
+        </span>
+        <span className="shrink-0 mt-0.5 text-slate-400 group-hover:text-brand transition-colors">
+          {open ? <Minus size={14} /> : <Plus size={14} />}
+        </span>
+      </button>
+      <motion.div
+        initial={false}
+        animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.25, ease: 'easeInOut' }}
+        className="overflow-hidden"
+      >
+        <p className="pb-5 text-[12px] sm:text-[13px] text-slate-500 leading-relaxed max-w-2xl">
+          {a}
+        </p>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentSection, setCurrentSection] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const TOTAL_SECTIONS = 6;
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const TOTAL_SECTIONS = 8;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -222,7 +251,6 @@ export default function LandingPage() {
     const el = scrollRef.current;
     if (!el) return;
 
-    // Skip on touch / small screens to avoid fighting the user
     const isTouch = typeof window !== 'undefined' && (
       window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768
     );
@@ -259,7 +287,8 @@ export default function LandingPage() {
 
     async function run() {
       await new Promise(r => setTimeout(r, 2500));
-      for (let i = 1; i < TOTAL_SECTIONS; i++) {
+      // Only preview the first 2 transitions so users aren't dragged through everything
+      for (let i = 1; i < Math.min(3, TOTAL_SECTIONS); i++) {
         if (cancelled) break;
         await scrollTo(i * el!.clientHeight);
         if (cancelled) break;
@@ -329,6 +358,53 @@ export default function LandingPage() {
     'Weak-area targeting',
   ];
 
+  // ⚠️ PLACEHOLDER TESTIMONIALS — replace with real quotes once you collect them.
+  // Even 2 real quotes from admitted applicants will outperform 3 polished fake ones.
+  const testimonials = [
+    {
+      quote: "[Replace me with a real quote. Keep it specific — what changed for this applicant? E.g., \"Went from guessing to knowing my percentile. Admitted top 5%.\"]",
+      name: "[First name L.]",
+      detail: "[WU BBE 2025 · Admitted]",
+    },
+    {
+      quote: "[Replace me. Specific wins beat generic praise. E.g., \"The radar chart showed I was weak on Calculus. Drilled it for two weeks, jumped 15 points.\"]",
+      name: "[First name L.]",
+      detail: "[WU BBE 2025 · Top 7%]",
+    },
+    {
+      quote: "[Replace me. E.g., \"Only prep platform that actually felt like the real exam — true/false format, same timing pressure.\"]",
+      name: "[First name L.]",
+      detail: "[WU BBE 2025]",
+    },
+  ];
+
+  const faqs = [
+    {
+      q: "Is BBEASY affiliated with WU Wien?",
+      a: "No. BBEASY is an independent prep platform. It is modelled strictly on the publicly available 2026 BBE syllabus and the official reference literature (Fuhrmann 2019, Sydsaeter et al. 2022). It is not endorsed by or affiliated with Wirtschaftsuniversität Wien.",
+    },
+    {
+      q: "What exactly do I get for free?",
+      a: "Unlimited full mock exams, a starter self-assessment, and live leaderboard ranking. No credit card required, no trial timer, no paywall after 3 attempts. If you never upgrade, you still get all of that.",
+    },
+    {
+      q: "How does Pro (€40 lifetime) differ from Free?",
+      a: "Pro unlocks personalised drills targeted at your weak areas, the radar-chart performance dashboard, percentile tracking over time, and leaderboard ranking with exam-count filters. You get it until you sit the exam — no subscription to cancel.",
+    },
+    {
+      q: "How is BBEASY different from other BBE prep?",
+      a: "Most prep products sell you a course — videos, PDFs, slides. BBEASY sells you exam reps. The closest thing to sitting the real BBE, unlimited times, with instant scoring and granular analytics so you know exactly what to drill next.",
+    },
+    {
+      q: "Can I get a refund on Pro?",
+      a: "Yes — 14-day no-questions-asked refund. If BBEASY doesn't feel like it's moving the needle, email us and we return your €40.",
+    },
+    {
+      q: "When is the 2026 BBE exam?",
+      a: "June 30, 2026. The live countdown at the top of the page updates every second.",
+    },
+  ];
+
   return (
     <>
       <SectionDots current={currentSection} total={TOTAL_SECTIONS} onClick={scrollToSection} />
@@ -349,7 +425,7 @@ export default function LandingPage() {
               <Link href="/about" className="px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">About</Link>
               <Link href="/auth/login" className="px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-colors">Login</Link>
               <Link href="/auth/register" className="flex items-center gap-1.5 px-4 py-1.5 bg-brand text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors ml-2">
-                Get started <ArrowUpRight size={10} />
+                Try a free mock <ArrowUpRight size={10} />
               </Link>
             </div>
 
@@ -359,7 +435,7 @@ export default function LandingPage() {
                 href="/auth/register"
                 className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-[10px] font-black uppercase tracking-[0.15em] hover:bg-slate-900 transition-colors"
               >
-                Start free <ArrowUpRight size={10} />
+                Free mock <ArrowUpRight size={10} />
               </Link>
               <button
                 onClick={() => setMenuOpen(o => !o)}
@@ -406,14 +482,17 @@ export default function LandingPage() {
               <div>
                 <motion.h1
                   {...v(0.1)}
-                  className="text-[2.5rem] leading-[1.02] sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight md:leading-[0.95] mb-5 sm:mb-8"
+                  className="text-[2.5rem] leading-[1.02] sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight md:leading-[0.95] mb-5 sm:mb-6"
                 >
-                  Get a Free
+                  Pass the WU BBE.
                   <br />
-                  Mock Test.
-                  <br />
-                  <span className="text-brand">BBE Entrance Exam.</span>
+                  <span className="text-brand">Without the guesswork.</span>
                 </motion.h1>
+
+                {/* Mobile-visible subtitle (desktop gets the longer one in the right column) */}
+                <motion.p {...v(0.12)} className="md:hidden text-slate-500 text-[13px] leading-relaxed mb-5 max-w-md">
+                  The exam simulator built for the 2026 WU Vienna entrance test. Unlimited mocks, instant scoring, real percentile tracking.
+                </motion.p>
 
                 {/* Compact countdown — mobile only */}
                 <motion.div {...v(0.15)} className="md:hidden mb-5">
@@ -425,7 +504,7 @@ export default function LandingPage() {
                     href="/auth/register"
                     className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 bg-brand text-white text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors shadow-lg shadow-brand/20"
                   >
-                    Start for free <ArrowUpRight size={11} />
+                    Start a free mock exam <ArrowUpRight size={11} />
                   </Link>
                   <Link
                     href="/auth/login"
@@ -434,16 +513,22 @@ export default function LandingPage() {
                     Sign in
                   </Link>
                 </motion.div>
-                <motion.p {...v(0.25)} className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-3">
-                  Free to start · No credit card required
-                </motion.p>
+
+                {/* Reassurance micro-copy */}
+                <motion.div {...v(0.25)} className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">No credit card</span>
+                  <span className="text-[9px] text-slate-300">·</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Free forever tier</span>
+                  <span className="text-[9px] text-slate-300">·</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">30 seconds to start</span>
+                </motion.div>
               </div>
 
               {/* Right column — desktop only */}
               <motion.div {...v(0.15)} className="hidden md:flex flex-col space-y-6">
                 <ExamCountdown />
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  The digitally-native simulator for the WU BBE entrance exam. Modelled strictly after the 2026 syllabus and official literature.
+                  The digitally-native simulator for the WU BBE entrance exam. Modelled strictly on the 2026 syllabus and official literature — so every question feels like the real thing.
                 </p>
                 <div className="flex items-center gap-6 border-t border-slate-200 pt-6">
                   <div>
@@ -454,6 +539,11 @@ export default function LandingPage() {
                   <div>
                     <p className="text-3xl font-black text-slate-900">150+</p>
                     <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">exam questions</p>
+                  </div>
+                  <div className="w-px h-10 bg-slate-200" />
+                  <div>
+                    <p className="text-3xl font-black text-slate-900">6</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-0.5">syllabus sections</p>
                   </div>
                 </div>
               </motion.div>
@@ -613,19 +703,90 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S6: PRICING ── */}
+        {/* ── S6: TESTIMONIALS ── */}
+        {/*
+          ⚠️ The quotes below are placeholders. Replace with REAL quotes from
+          applicants as soon as you collect them — even one or two real ones
+          will out-convert three polished placeholders. Specific wins (numbers,
+          sections drilled, outcome) beat generic praise.
+        */}
+        <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-slate-50 border-b border-slate-200">
+          <div className="max-w-6xl mx-auto w-full">
+            <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-4">
+              From the applicants
+            </motion.p>
+            <motion.h2 {...v(0.08)} className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-[1.05] md:leading-none mb-10 sm:mb-12 max-w-2xl">
+              Built by WU applicants, used by the ones that made it in.
+            </motion.h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-slate-200">
+              {testimonials.map((t, i) => (
+                <motion.div
+                  key={i}
+                  {...v(0.12 + i * 0.06)}
+                  className="bg-white px-6 py-8 sm:py-10 flex flex-col justify-between min-h-[240px]"
+                >
+                  <div>
+                    <Quote size={14} className="text-brand mb-4" />
+                    <p className="text-[13px] sm:text-sm text-slate-700 leading-relaxed">
+                      {t.quote}
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-4 border-t border-slate-100">
+                    <p className="text-[11px] font-black text-slate-900 tracking-tight">{t.name}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-1">{t.detail}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div {...v(0.3)} className="mt-8 sm:mt-10 flex items-center gap-2">
+              <ShieldCheck size={12} className="text-slate-400" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                Independent platform · Not affiliated with WU Wien
+              </p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── S7: FAQ ── */}
+        <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-white border-b border-slate-200">
+          <div className="max-w-3xl mx-auto w-full">
+            <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-4">
+              FAQ
+            </motion.p>
+            <motion.h2 {...v(0.08)} className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-[1.05] md:leading-none mb-10 sm:mb-12">
+              Questions before<br />you start.
+            </motion.h2>
+
+            <div className="border-t border-slate-200">
+              {faqs.map((f, i) => (
+                <FaqItem
+                  key={i}
+                  q={f.q}
+                  a={f.a}
+                  open={openFaq === i}
+                  onToggle={() => setOpenFaq(openFaq === i ? null : i)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── S8: PRICING + FINAL CTA + FOOTER ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 bg-slate-50">
           <div className="max-w-6xl mx-auto w-full py-20">
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-slate-400 mb-2">Pricing</motion.p>
             <motion.p {...v(0.08)} className="text-slate-400 text-sm mb-8 sm:mb-10">
-              Start free. Upgrade when you're ready. Cancel anytime.
+              Start free. Upgrade once you know it's working. 14-day refund on Pro.
             </motion.p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-200 items-stretch mb-16 sm:mb-20">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-200 items-stretch mb-12 sm:mb-14">
+              {/* FREE */}
               <motion.div {...v(0.1)} className="bg-slate-50 px-6 sm:px-8 py-8 sm:py-10 flex flex-col">
                 <p className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">Free</p>
                 <p className="text-4xl sm:text-5xl font-black text-slate-900">€0</p>
-                <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-1 mb-6 sm:mb-8">Always free</p>
+                <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-1 mb-6 sm:mb-8">Always free · No card</p>
                 <ul className="space-y-3 flex-1 mb-6 sm:mb-8">
                   {freeFeatures.map(f => (
                     <li key={f} className="flex items-center gap-2.5 text-xs text-slate-600">
@@ -634,14 +795,22 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link href="/auth/register" className="flex items-center justify-center gap-2 py-3 border border-slate-300 text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-600 hover:border-slate-600 hover:text-slate-900 transition-colors">
-                  Get started free
+                  Start free
                 </Link>
               </motion.div>
 
-              <motion.div {...v(0.15)} className="bg-brand px-6 sm:px-8 py-8 sm:py-10 flex flex-col text-white">
-                <p className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-white/50 mb-4">Pro</p>
-                <p className="text-4xl sm:text-5xl font-black text-white">€20</p>
-                <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-white/50 mt-1 mb-6 sm:mb-8">/ month · or €40 lifetime</p>
+              {/* PRO — lead with lifetime */}
+              <motion.div {...v(0.15)} className="relative bg-brand px-6 sm:px-8 py-8 sm:py-10 flex flex-col text-white">
+                <span className="absolute -top-3 left-6 sm:left-8 bg-white text-brand text-[9px] font-black uppercase tracking-[0.25em] px-2 py-1">
+                  Best value
+                </span>
+                <p className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-white/50 mb-4">Pro · Lifetime</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl sm:text-5xl font-black text-white">€40</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/60">one-time</p>
+                </div>
+                <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-white/50 mt-1 mb-1">Pay once · Pro until the exam and beyond</p>
+                <p className="text-[10px] sm:text-[9px] uppercase tracking-[0.2em] text-white/40 mb-6 sm:mb-8">Or €20 / month · cancel anytime</p>
                 <ul className="space-y-3 flex-1 mb-6 sm:mb-8">
                   {proFeatures.map(f => (
                     <li key={f} className="flex items-center gap-2.5 text-xs text-white/80">
@@ -650,10 +819,30 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link href="/auth/register" className="flex items-center justify-center gap-2 py-3 bg-white text-brand text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 hover:text-white transition-colors">
-                  Get Pro <ArrowUpRight size={11} />
+                  Get Pro · €40 <ArrowUpRight size={11} />
                 </Link>
+                <div className="mt-3 flex items-center justify-center gap-1.5">
+                  <ShieldCheck size={10} className="text-white/50" />
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">14-day refund</p>
+                </div>
               </motion.div>
             </div>
+
+            {/* FINAL CTA */}
+            <motion.div {...v(0.1)} className="border border-slate-200 bg-white px-6 py-8 sm:py-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 sm:gap-6 mb-16 sm:mb-20">
+              <div>
+                <p className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] text-brand mb-2">Still thinking?</p>
+                <p className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight max-w-md">
+                  Take one free mock exam. Know in 60 minutes where you stand.
+                </p>
+              </div>
+              <Link
+                href="/auth/register"
+                className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 bg-brand text-white text-[10px] sm:text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors shadow-lg shadow-brand/20 shrink-0"
+              >
+                Start free <ArrowUpRight size={11} />
+              </Link>
+            </motion.div>
 
             <footer className="pt-8 sm:pt-10 border-t border-slate-200 flex flex-col sm:flex-row sm:justify-between gap-4 sm:gap-6">
               <span className="font-black text-sm tracking-tight">BB<span className="text-brand">EASY</span></span>
