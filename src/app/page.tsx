@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Timer } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Menu, X, Layers, Plus, Minus, ShieldCheck, Quote } from 'lucide-react';
+import { ArrowUpRight, CheckCircle, BarChart3, Trophy, Shuffle, Menu, X, Layers, Plus, Minus, ShieldCheck } from 'lucide-react';
 
 // ── RADAR CHART ──
 function RadarChart({ data }: { data: Record<string, number> }) {
@@ -233,7 +233,7 @@ export default function LandingPage() {
   const [currentSection, setCurrentSection] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const TOTAL_SECTIONS = 8;
+  const TOTAL_SECTIONS = 7;
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -356,26 +356,6 @@ export default function LandingPage() {
     'Average score & live percentile',
     'Leaderboard ranking',
     'Weak-area targeting',
-  ];
-
-  // ⚠️ PLACEHOLDER TESTIMONIALS — replace with real quotes once you collect them.
-  // Even 2 real quotes from admitted applicants will outperform 3 polished fake ones.
-  const testimonials = [
-    {
-      quote: "[Replace me with a real quote. Keep it specific — what changed for this applicant? E.g., \"Went from guessing to knowing my percentile. Admitted top 5%.\"]",
-      name: "[First name L.]",
-      detail: "[WU BBE 2025 · Admitted]",
-    },
-    {
-      quote: "[Replace me. Specific wins beat generic praise. E.g., \"The radar chart showed I was weak on Calculus. Drilled it for two weeks, jumped 15 points.\"]",
-      name: "[First name L.]",
-      detail: "[WU BBE 2025 · Top 7%]",
-    },
-    {
-      quote: "[Replace me. E.g., \"Only prep platform that actually felt like the real exam — true/false format, same timing pressure.\"]",
-      name: "[First name L.]",
-      detail: "[WU BBE 2025]",
-    },
   ];
 
   const faqs = [
@@ -703,53 +683,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S6: TESTIMONIALS ── */}
-        {/*
-          ⚠️ The quotes below are placeholders. Replace with REAL quotes from
-          applicants as soon as you collect them — even one or two real ones
-          will out-convert three polished placeholders. Specific wins (numbers,
-          sections drilled, outcome) beat generic praise.
-        */}
-        <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-slate-50 border-b border-slate-200">
-          <div className="max-w-6xl mx-auto w-full">
-            <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-4">
-              From the applicants
-            </motion.p>
-            <motion.h2 {...v(0.08)} className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-[1.05] md:leading-none mb-10 sm:mb-12 max-w-2xl">
-              Built by WU applicants, used by the ones that made it in.
-            </motion.h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-slate-200">
-              {testimonials.map((t, i) => (
-                <motion.div
-                  key={i}
-                  {...v(0.12 + i * 0.06)}
-                  className="bg-white px-6 py-8 sm:py-10 flex flex-col justify-between min-h-[240px]"
-                >
-                  <div>
-                    <Quote size={14} className="text-brand mb-4" />
-                    <p className="text-[13px] sm:text-sm text-slate-700 leading-relaxed">
-                      {t.quote}
-                    </p>
-                  </div>
-                  <div className="mt-6 pt-4 border-t border-slate-100">
-                    <p className="text-[11px] font-black text-slate-900 tracking-tight">{t.name}</p>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-1">{t.detail}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div {...v(0.3)} className="mt-8 sm:mt-10 flex items-center gap-2">
-              <ShieldCheck size={12} className="text-slate-400" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                Independent platform · Not affiliated with WU Wien
-              </p>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── S7: FAQ ── */}
+        {/* ── S6: FAQ ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 py-20 md:py-0 bg-white border-b border-slate-200">
           <div className="max-w-3xl mx-auto w-full">
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-brand mb-4">
@@ -773,7 +707,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── S8: PRICING + FINAL CTA + FOOTER ── */}
+        {/* ── S7: PRICING + FINAL CTA + FOOTER ── */}
         <section className="snap-start min-h-screen flex flex-col justify-center px-5 sm:px-6 bg-slate-50">
           <div className="max-w-6xl mx-auto w-full py-20">
             <motion.p {...v(0.05)} className="text-[10px] sm:text-[9px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] text-slate-400 mb-2">Pricing</motion.p>
