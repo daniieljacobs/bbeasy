@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -16,12 +16,13 @@ export async function GET(request: Request) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                get(name: string) { return cookieStore.get(name)?.value; },
-                set(name: string, value: string, options: CookieOptions) {
-                    cookieStore.set({ name, value, ...options });
+                getAll() {
+                    return cookieStore.getAll();
                 },
-                remove(name: string, options: CookieOptions) {
-                    cookieStore.set({ name, value: '', ...options });
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value, options }) => {
+                        cookieStore.set(name, value, options);
+                    });
                 },
             },
         }
@@ -38,25 +39,21 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}/auth/login?error=oauth_no_user`);
     }
 
-    // Decide where to send them.
     const { data: profile } = await supabase
         .from('profiles')
         .select('full_name, username, role, has_onboarded')
         .eq('id', user.id)
         .single();
 
-    // Missing identity → complete profile.
     if (!profile?.full_name || !profile?.username) {
         return NextResponse.redirect(`${origin}/auth/complete-profile`);
     }
 
-    // Profile complete but never went through the welcome flow → onboarding.
     if (!profile.has_onboarded) {
         const firstName = profile.full_name.split(' ')[0] || '';
         return NextResponse.redirect(`${origin}/auth/onboarding?name=${encodeURIComponent(firstName)}`);
     }
 
-    // Existing user → straight to dashboard.
     const firstName = profile.full_name.split(' ')[0] || '';
     const target = profile.role === 'admin' ? '/admin/dashboard' : '/portal/dashboard';
     return NextResponse.redirect(`${origin}${target}?welcome=${encodeURIComponent(firstName)}`);

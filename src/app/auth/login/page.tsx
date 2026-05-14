@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,6 +13,16 @@ export default function LoginPage() {
     const [googleLoading, setGoogleLoading] = useState(false);
     const [loginSuccess, setLoginSuccess] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) return;
+            supabase.from('profiles').select('role').eq('id', session.user.id).single()
+                .then(({ data }) => {
+                    router.replace(data?.role === 'admin' ? '/admin/dashboard' : '/portal/dashboard');
+                });
+        });
+    }, [router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,13 +56,12 @@ export default function LoginPage() {
 
     const handleGoogleLogin = async () => {
         setGoogleLoading(true);
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/oauth/callback`,
             },
         });
-        console.log('[google-login] data:', data, 'error:', error);
         if (error) {
             alert(error.message);
             setGoogleLoading(false);
