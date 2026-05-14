@@ -1,32 +1,48 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+"use client";
 
-export async function GET(request: Request) {
-    const { searchParams, origin } = new URL(request.url);
-    const code = searchParams.get('code');
-    const next = searchParams.get('next') ?? '/portal/dashboard';
+import { useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 
-    if (code) {
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    get(name: string) { return cookieStore.get(name)?.value; },
-                    set(name: string, value: string, options: CookieOptions) {
-                        cookieStore.set({ name, value, ...options });
-                    },
-                    remove(name: string, options: CookieOptions) {
-                        cookieStore.set({ name, value: '', ...options });
-                    },
-                },
+function CallbackHandler() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const code = searchParams.get('code');
+        const next = searchParams.get('next') ?? '/portal/dashboard';
+
+        if (!code) {
+            router.replace('/auth/login?error=oauth_no_code');
+            return;
+        }
+
+        supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+            if (error) {
+                router.replace('/auth/login?error=oauth_exchange_failed');
+                return;
             }
-        );
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) return NextResponse.redirect(`${origin}${next}`);
-    }
+            router.replace(next);
+        });
+    }, [router, searchParams]);
 
-    return NextResponse.redirect(`${origin}/auth/login?error=oauth_failed`);
+    return (
+        <div className="fixed inset-0 flex items-center justify-center font-mono">
+            <Loader2 className="animate-spin text-slate-300" size={20} />
+        </div>
+    );
+}
+
+export default function CallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="fixed inset-0 flex items-center justify-center font-mono">
+                <Loader2 className="animate-spin text-slate-300" size={20} />
+            </div>
+        }>
+            <CallbackHandler />
+        </Suspense>
+    );
 }
