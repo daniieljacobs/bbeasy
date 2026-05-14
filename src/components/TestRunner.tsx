@@ -1,15 +1,45 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft, Loader2, Timer, Brain, Shield } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, ChevronLeft, Loader2, Timer, Brain, Shield, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useTransform, MotionValue } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useParams } from 'next/navigation';
 import MathText from '@/components/MathText';
 
+// ─── PROGRESS PERSISTENCE ─────────────────────────────────────────────────────
+
+type SavedProgress = {
+    answers: Record<string, Record<string, string>>;
+    elapsed: number;
+    savedAt: number;
+};
+
+function loadProgress(testId: string): SavedProgress | null {
+    try {
+        const raw = localStorage.getItem(`bbe_test_progress_${testId}`);
+        if (!raw) return null;
+        const data: SavedProgress = JSON.parse(raw);
+        // Discard progress older than 48 hours
+        if (Date.now() - data.savedAt > 48 * 3600 * 1000) {
+            localStorage.removeItem(`bbe_test_progress_${testId}`);
+            return null;
+        }
+        return data;
+    } catch {
+        return null;
+    }
+}
+
 // ─── GET READY SCREEN ───────────────────────────────────────────────────────
 
-function GetReadyScreen({ testTitle, timeLimitMins, onStart }: { testTitle: string; timeLimitMins: number; onStart: () => void }) {
+function GetReadyScreen({ testTitle, timeLimitMins, hasSavedProgress, onStart, onContinue }: {
+    testTitle: string;
+    timeLimitMins: number;
+    hasSavedProgress: boolean;
+    onStart: () => void;
+    onContinue: () => void;
+}) {
     const [phase, setPhase] = useState<'intro' | 'countdown' | 'go'>('intro');
     const [count, setCount] = useState(3);
 
@@ -29,6 +59,7 @@ function GetReadyScreen({ testTitle, timeLimitMins, onStart }: { testTitle: stri
         { icon: <Brain size={14} />, text: "No AI assistance" },
         { icon: <Shield size={14} />, text: "Treat this as the real exam" },
         { icon: <Timer size={14} />, text: `${timeLimitMins} min limit · 1.5x bonus for finishing in the first half` },
+        { icon: <AlertCircle size={14} />, text: "Wrong answers are penalised — you may skip statements" },
     ];
 
     return (
@@ -82,17 +113,40 @@ function GetReadyScreen({ testTitle, timeLimitMins, onStart }: { testTitle: stri
                             ))}
                         </motion.div>
 
-                        <motion.button
+                        <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.65 }}
-                            onClick={() => setPhase('countdown')}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="px-14 py-4 bg-brand text-white text-[9px] font-black uppercase tracking-[0.25em] hover:bg-slate-900 transition-colors shadow-xl shadow-brand/20"
+                            className="flex flex-col items-center gap-4"
                         >
-                            I'm Ready
-                        </motion.button>
+                            {hasSavedProgress ? (
+                                <>
+                                    <motion.button
+                                        onClick={onContinue}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="px-14 py-4 bg-brand text-white text-[9px] font-black uppercase tracking-[0.25em] hover:bg-slate-900 transition-colors shadow-xl shadow-brand/20 w-full max-w-sm"
+                                    >
+                                        Continue Last Session
+                                    </motion.button>
+                                    <button
+                                        onClick={() => { setCount(3); setPhase('countdown'); }}
+                                        className="text-[9px] uppercase tracking-[0.25em] text-slate-400 hover:text-slate-600 transition-colors"
+                                    >
+                                        Start New Test
+                                    </button>
+                                </>
+                            ) : (
+                                <motion.button
+                                    onClick={() => setPhase('countdown')}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="px-14 py-4 bg-brand text-white text-[9px] font-black uppercase tracking-[0.25em] hover:bg-slate-900 transition-colors shadow-xl shadow-brand/20"
+                                >
+                                    I'm Ready
+                                </motion.button>
+                            )}
+                        </motion.div>
 
                         <motion.a
                             href="/portal/dashboard"
@@ -165,15 +219,83 @@ function getTimeMultiplier(timeTaken: number, timeLimitSecs: number): number {
     return 1.5 - progress * 0.5;
 }
 
+// ─── MAGNIFIED PROGRESS DOTS (macOS dock style) ─────────────────────────────
+
+function ProgressDots({ questions, onSelect, getDotClass }: {
+    questions: any[];
+    onSelect: (idx: number) => void;
+    getDotClass: (idx: number) => string;
+}) {
+    const mouseX = useMotionValue<number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    return (
+        <div
+            ref={containerRef}
+            onMouseMove={(e) => {
+                const rect = containerRef.current?.getBoundingClientRect();
+                if (rect) mouseX.set(e.clientX - rect.left);
+            }}
+            onMouseLeave={() => mouseX.set(null)}
+            className="flex justify-center items-end flex-wrap gap-3 py-4 px-4"
+        >
+            {questions.map((_, idx) => (
+                <Dot
+                    key={idx}
+                    mouseX={mouseX}
+                    onClick={() => onSelect(idx)}
+                    className={getDotClass(idx)}
+                />
+            ))}
+        </div>
+    );
+}
+
+function Dot({ mouseX, onClick, className }: {
+    mouseX: MotionValue<number | null>;
+    onClick: () => void;
+    className: string;
+}) {
+    const ref = useRef<HTMLButtonElement>(null);
+
+    // Compute distance from cursor to the dot's center within the container.
+    const distance = useTransform(mouseX, (val: number | null) => {
+        if (val === null || !ref.current) return 1000;
+        const rect = ref.current.getBoundingClientRect();
+        const parentRect = ref.current.parentElement?.getBoundingClientRect();
+        if (!parentRect) return 1000;
+        const dotCenter = rect.left - parentRect.left + rect.width / 2;
+        return Math.abs(val - dotCenter);
+    });
+
+    // Within 120px of the cursor the dot grows; closest = 2.6x.
+    const scale = useTransform(distance, [0, 50, 100], [1.8, 1.3, 1]);
+
+    return (
+        <motion.button
+            ref={ref}
+            onClick={onClick}
+            style={{ scale, transformOrigin: 'center bottom' }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25, mass: 0.4 }}
+            className={`w-2.5 h-2.5 rounded-full ${className}`}
+        />
+    );
+}
+
 // ─── TEST RUNNER ─────────────────────────────────────────────────────────────
 
-function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeLimitSecs: number }) {
+function TestRunnerInner({ questions, timeLimitSecs, initialAnswers, initialElapsed }: {
+    questions: any[];
+    timeLimitSecs: number;
+    initialAnswers: Record<string, Record<string, string>>;
+    initialElapsed: number;
+}) {
     const [currentIdx, setCurrentIdx] = useState(0);
-    const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
+    const [answers, setAnswers] = useState<Record<string, Record<string, string>>>(initialAnswers);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [elapsed, setElapsed] = useState(0);
+    const [elapsed, setElapsed] = useState(initialElapsed);
     const [showTimeWarning, setShowTimeWarning] = useState(false);
-    const startTimeRef = useRef<number>(Date.now());
+    const startTimeRef = useRef<number>(Date.now() - initialElapsed * 1000);
 
     const router = useRouter();
     const params = useParams();
@@ -195,6 +317,34 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
         return () => clearTimeout(t);
     }, [showTimeWarning]);
 
+    // Save progress on every answer change
+    useEffect(() => {
+        if (!testId) return;
+        const currentElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        localStorage.setItem(`bbe_test_progress_${testId}`, JSON.stringify({
+            answers,
+            elapsed: currentElapsed,
+            savedAt: Date.now(),
+        }));
+    }, [answers, testId]);
+
+    // Also refresh elapsed in saved progress every 30 seconds
+    useEffect(() => {
+        if (!testId) return;
+        const interval = setInterval(() => {
+            const key = `bbe_test_progress_${testId}`;
+            const raw = localStorage.getItem(key);
+            if (!raw) return;
+            try {
+                const data = JSON.parse(raw);
+                data.elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+                data.savedAt = Date.now();
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch { /* ignore */ }
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [testId]);
+
     const formatTime = (secs: number) => {
         const h = Math.floor(secs / 3600);
         const m = Math.floor((secs % 3600) / 60);
@@ -208,7 +358,7 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
     const multiplierNow = getTimeMultiplier(elapsed, timeLimitSecs);
 
     const handleSelect = (qId: string, sId: string, val: string) => {
-        setAnswers({ ...answers, [qId]: { ...(answers[qId] || {}), [sId]: val } });
+        setAnswers(prev => ({ ...prev, [qId]: { ...(prev[qId] || {}), [sId]: val } }));
     };
 
     const isQuestionComplete = (qIdx: number) => {
@@ -216,10 +366,18 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
         return Object.keys(answers[q.id] || {}).length === q.statements.length;
     };
 
-    const isTestComplete = questions.every((_, idx) => isQuestionComplete(idx));
     const answeredCount = questions.filter((_, idx) => isQuestionComplete(idx)).length;
 
-    const handleSubmit = async (autoSubmit = false) => {
+    const getQuestionDotClass = (idx: number) => {
+        if (currentIdx === idx) return 'bg-brand scale-125 shadow-md shadow-brand/30';
+        const q = questions[idx];
+        const answeredStatements = Object.keys(answers[q.id] || {}).length;
+        if (answeredStatements === 0) return 'bg-slate-200';
+        if (answeredStatements === q.statements.length) return 'bg-brand/30';
+        return 'bg-amber-300/60'; // Partially answered
+    };
+
+    const handleSubmit = async (_autoSubmit = false) => {
         if (!testId) return;
         setIsSubmitting(true);
         setShowTimeWarning(false);
@@ -244,16 +402,19 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                 totalPossible += qPoints;
 
                 q.statements.forEach((s: any) => {
-                    const userChoiceBool = answers[q.id]?.[s.id] === 'True';
+                    const userAnswer = answers[q.id]?.[s.id];
+                    // Skipped statements: no points, no penalty
+                    if (userAnswer === undefined) return;
+                    const userChoiceBool = userAnswer === 'True';
                     const isCorrect = userChoiceBool === s.isCorrect;
-                    if (isCorrect) totalEarned += statementValue;
+                    totalEarned += isCorrect ? statementValue : -statementValue;
                     answerRecords.push({ question_item_id: s.id, user_choice: userChoiceBool, is_correct: isCorrect });
                 });
             });
 
-            const score = totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 0;
+            const score = totalPossible > 0 ? Math.max(0, Math.round((totalEarned / totalPossible) * 100)) : 0;
             const multiplier = getTimeMultiplier(timeTaken, timeLimitSecs);
-            const prepPoints = score >= 70 ? Math.round(totalEarned * multiplier) : 0;
+            const prepPoints = score >= 70 ? Math.round(Math.max(0, totalEarned) * multiplier) : 0;
 
             const { data: resultData, error: resultErr } = await supabase
                 .from('test_results')
@@ -271,8 +432,12 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
 
             if (resultErr) { alert(`Could not save result: ${resultErr.message}`); setIsSubmitting(false); return; }
 
-            await supabase.from('user_answers').insert(answerRecords.map(r => ({ ...r, result_id: resultData.id })));
+            if (answerRecords.length > 0) {
+                await supabase.from('user_answers').insert(answerRecords.map(r => ({ ...r, result_id: resultData.id })));
+            }
             if (prepPoints > 0) await supabase.rpc('increment_points', { user_id: user.id, points: prepPoints });
+
+            localStorage.removeItem(`bbe_test_progress_${testId}`);
             router.push(`/portal/results/${resultData.id}`);
 
         } catch (err) {
@@ -365,14 +530,12 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                     </h2>
                     <br></br>
 
-                    {/* Context — text */}
                     {currentQ.contextText && (
                         <div className="mb-4 p-4 bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
                             <MathText text={currentQ.contextText} />
                         </div>
                     )}
 
-                    {/* Context — image */}
                     {currentQ.contextImageUrl && (
                         <div className="mb-4">
                             <img
@@ -382,8 +545,6 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                             />
                         </div>
                     )}
-
-
                 </div>
 
                 <div className="divide-y divide-slate-50">
@@ -425,7 +586,7 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
                     {currentIdx === questions.length - 1 ? (
                         <button
                             onClick={() => handleSubmit(false)}
-                            disabled={isSubmitting || !isTestComplete}
+                            disabled={isSubmitting}
                             className="flex items-center gap-2 px-10 py-3 bg-brand text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-slate-900 transition-colors disabled:opacity-20 shadow-lg shadow-brand/10"
                         >
                             {isSubmitting ? <><Loader2 className="animate-spin" size={12} /> Processing</> : 'Submit Test'}
@@ -442,20 +603,11 @@ function TestRunnerInner({ questions, timeLimitSecs }: { questions: any[]; timeL
             </div>
 
             {/* ── PROGRESS DOTS ── */}
-            <div className="flex justify-center flex-wrap gap-3 py-2">
-                {questions.map((_, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => setCurrentIdx(idx)}
-                        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${currentIdx === idx
-                            ? 'bg-brand scale-125 shadow-md shadow-brand/30'
-                            : isQuestionComplete(idx)
-                                ? 'bg-brand/30'
-                                : 'bg-slate-200'
-                            }`}
-                    />
-                ))}
-            </div>
+            <ProgressDots
+                questions={questions}
+                onSelect={setCurrentIdx}
+                getDotClass={getQuestionDotClass}
+            />
         </motion.div>
     );
 }
@@ -468,7 +620,25 @@ export default function TestRunner({ questions, testTitle, timeLimitMins = 180 }
     timeLimitMins?: number;
 }) {
     const [started, setStarted] = useState(false);
+    const [resumeData, setResumeData] = useState<SavedProgress | null>(null);
+    const params = useParams();
+    const testId = params.id as string;
     const timeLimitSecs = timeLimitMins * 60;
+
+    useEffect(() => {
+        if (!testId) return;
+        setResumeData(loadProgress(testId));
+    }, [testId]);
+
+    const handleStart = () => {
+        if (testId) localStorage.removeItem(`bbe_test_progress_${testId}`);
+        setResumeData(null);
+        setStarted(true);
+    };
+
+    const handleContinue = () => {
+        setStarted(true);
+    };
 
     return (
         <AnimatePresence mode="wait">
@@ -477,12 +647,19 @@ export default function TestRunner({ questions, testTitle, timeLimitMins = 180 }
                     <GetReadyScreen
                         testTitle={testTitle || "Assessment"}
                         timeLimitMins={timeLimitMins}
-                        onStart={() => setStarted(true)}
+                        hasSavedProgress={!!resumeData}
+                        onStart={handleStart}
+                        onContinue={handleContinue}
                     />
                 </motion.div>
             ) : (
                 <motion.div key="test">
-                    <TestRunnerInner questions={questions} timeLimitSecs={timeLimitSecs} />
+                    <TestRunnerInner
+                        questions={questions}
+                        timeLimitSecs={timeLimitSecs}
+                        initialAnswers={resumeData?.answers ?? {}}
+                        initialElapsed={resumeData?.elapsed ?? 0}
+                    />
                 </motion.div>
             )}
         </AnimatePresence>

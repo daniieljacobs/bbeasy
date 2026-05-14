@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, MinusCircle } from 'lucide-react';
 import MathText from '@/components/MathText';
 
 interface Statement {
     text: string;
     correctAnswer: boolean;
-    userChoice: boolean;
+    userChoice: boolean | null;
     isCorrect: boolean;
+    wasSkipped: boolean;
 }
 
 interface ReviewQuestion {
@@ -20,14 +21,27 @@ interface ReviewQuestion {
     statements: Statement[];
 }
 
-function QuestionScore({ statements }: { statements: Statement[] }) {
-    const correct = statements.filter(s => s.isCorrect).length;
-    const total = statements.length;
-    const allRight = correct === total;
-    const allWrong = correct === 0;
+function calcNetEarned(statements: Statement[], points: number): number {
+    const n = statements.length;
+    if (n === 0) return 0;
+    const sv = points / n;
+    return statements.reduce((acc, s) => s.wasSkipped ? acc : s.isCorrect ? acc + sv : acc - sv, 0);
+}
+
+function QuestionScore({ statements, points }: { statements: Statement[]; points: number }) {
+    const net = calcNetEarned(statements, points);
+    const earned = Math.max(0, net);
+    const noneAnswered = statements.every(s => s.wasSkipped);
+    const color = noneAnswered
+        ? 'text-slate-400'
+        : earned >= points - 0.001
+            ? 'text-emerald-500'
+            : earned === 0
+                ? 'text-red-400'
+                : 'text-amber-500';
     return (
-        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${allRight ? 'text-emerald-500' : allWrong ? 'text-red-400' : 'text-amber-500'}`}>
-            {correct}/{total}
+        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${color}`}>
+            {earned % 1 === 0 ? earned.toFixed(0) : earned.toFixed(1)} / {points} pts
         </span>
     );
 }
@@ -36,22 +50,25 @@ export default function ResultsReview({ questions }: { questions: ReviewQuestion
     const [idx, setIdx] = useState(0);
     const [direction, setDirection] = useState(1);
 
+    if (questions.length === 0) return null;
+
     const q = questions[idx];
-    const correctCount = q.statements.filter(s => s.isCorrect).length;
-    const totalCount = q.statements.length;
-    const allCorrect = correctCount === totalCount;
-    const allWrong = correctCount === 0;
+    const qNet = calcNetEarned(q.statements, q.points);
+    const qEarned = Math.max(0, qNet);
+    const qNoneAnswered = q.statements.every(s => s.wasSkipped);
 
     function go(next: number) {
         setDirection(next > idx ? 1 : -1);
         setIdx(next);
     }
 
-    const accentColor = allCorrect
-        ? 'border-l-emerald-400'
-        : allWrong
-            ? 'border-l-red-400'
-            : 'border-l-amber-400';
+    const accentColor = qNoneAnswered
+        ? 'border-l-slate-300'
+        : qEarned >= q.points - 0.001
+            ? 'border-l-emerald-400'
+            : qEarned === 0
+                ? 'border-l-red-400'
+                : 'border-l-amber-400';
 
     return (
         <div className="space-y-4">
@@ -79,8 +96,7 @@ export default function ResultsReview({ questions }: { questions: ReviewQuestion
                                     Question {idx + 1} of {questions.length}
                                 </p>
                                 <div className="flex items-center gap-3 shrink-0">
-                                    <QuestionScore statements={q.statements} />
-                                    <span className="text-[8px] uppercase tracking-[0.2em] text-slate-300">{q.points}pts</span>
+                                    <QuestionScore statements={q.statements} points={q.points} />
                                 </div>
                             </div>
                             <p className="text-sm font-black text-slate-900 leading-snug mt-2">
@@ -103,20 +119,21 @@ export default function ResultsReview({ questions }: { questions: ReviewQuestion
                         {/* Statements */}
                         <div className="divide-y divide-slate-50">
                             {q.statements.map((s, sIdx) => {
-                                const userLabel = s.userChoice ? 'True' : 'False';
                                 const correctLabel = s.correctAnswer ? 'True' : 'False';
 
                                 return (
                                     <div
                                         key={sIdx}
-                                        className={`px-6 py-4 ${s.isCorrect ? 'bg-white' : 'bg-red-50/40'}`}
+                                        className={`px-6 py-4 ${s.wasSkipped ? 'bg-slate-50/30' : s.isCorrect ? 'bg-white' : 'bg-red-50/40'}`}
                                     >
                                         <div className="flex items-start gap-3">
-                                            {/* Correct/wrong icon */}
+                                            {/* Status icon */}
                                             <div className="mt-0.5 shrink-0">
-                                                {s.isCorrect
-                                                    ? <CheckCircle2 size={15} className="text-emerald-500" />
-                                                    : <XCircle size={15} className="text-red-400" />
+                                                {s.wasSkipped
+                                                    ? <MinusCircle size={15} className="text-slate-300" />
+                                                    : s.isCorrect
+                                                        ? <CheckCircle2 size={15} className="text-emerald-500" />
+                                                        : <XCircle size={15} className="text-red-400" />
                                                 }
                                             </div>
 
@@ -127,26 +144,46 @@ export default function ResultsReview({ questions }: { questions: ReviewQuestion
 
                                             {/* Answer pills */}
                                             <div className="shrink-0 flex flex-col items-end gap-1.5">
-                                                {/* User's pick */}
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-[7px] uppercase tracking-[0.2em] text-slate-300 font-black">You</span>
-                                                    <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border
-                                                        ${s.isCorrect
-                                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                                                            : 'bg-red-50 border-red-200 text-red-500'
-                                                        }`}>
-                                                        {userLabel}
-                                                    </span>
-                                                </div>
-
-                                                {/* Correct answer — only show if wrong */}
-                                                {!s.isCorrect && (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-[7px] uppercase tracking-[0.2em] text-slate-300 font-black">Ans</span>
-                                                        <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border bg-emerald-50 border-emerald-200 text-emerald-600">
-                                                            {correctLabel}
-                                                        </span>
-                                                    </div>
+                                                {s.wasSkipped ? (
+                                                    <>
+                                                        {/* Skipped indicator */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[7px] uppercase tracking-[0.2em] text-slate-300 font-black">You</span>
+                                                            <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border bg-slate-50 border-slate-200 text-slate-400">
+                                                                Skipped
+                                                            </span>
+                                                        </div>
+                                                        {/* Always show correct answer for skipped */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[7px] uppercase tracking-[0.2em] text-slate-300 font-black">Ans</span>
+                                                            <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border bg-emerald-50 border-emerald-200 text-emerald-600">
+                                                                {correctLabel}
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {/* User's pick */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[7px] uppercase tracking-[0.2em] text-slate-300 font-black">You</span>
+                                                            <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border
+                                                                ${s.isCorrect
+                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                                                                    : 'bg-red-50 border-red-200 text-red-500'
+                                                                }`}>
+                                                                {s.userChoice ? 'True' : 'False'}
+                                                            </span>
+                                                        </div>
+                                                        {/* Correct answer — only show if wrong */}
+                                                        {!s.isCorrect && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[7px] uppercase tracking-[0.2em] text-slate-300 font-black">Ans</span>
+                                                                <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border bg-emerald-50 border-emerald-200 text-emerald-600">
+                                                                    {correctLabel}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         </div>
@@ -172,13 +209,16 @@ export default function ResultsReview({ questions }: { questions: ReviewQuestion
                 {/* Dot navigation */}
                 <div className="flex items-center gap-1.5">
                     {questions.map((qDot, i) => {
-                        const qCorrect = qDot.statements.filter(s => s.isCorrect).length;
-                        const qTotal = qDot.statements.length;
-                        const dotColor = qCorrect === qTotal
-                            ? 'bg-emerald-400'
-                            : qCorrect === 0
-                                ? 'bg-red-400'
-                                : 'bg-amber-400';
+                        const dotNet = calcNetEarned(qDot.statements, qDot.points);
+                        const dotEarned = Math.max(0, dotNet);
+                        const dotNoneAnswered = qDot.statements.every(s => s.wasSkipped);
+                        const dotColor = dotNoneAnswered
+                            ? 'bg-slate-300'
+                            : dotEarned >= qDot.points - 0.001
+                                ? 'bg-emerald-400'
+                                : dotEarned === 0
+                                    ? 'bg-red-400'
+                                    : 'bg-amber-400';
 
                         return (
                             <button

@@ -40,22 +40,30 @@ export default async function ResultsPage({ params }: PageProps) {
             time_taken,
             completed_at,
             test_id,
-            tests (title, time_limit),
-            user_answers (
-                id,
-                is_correct,
-                user_choice,
-                question_items (
-                    id,
-                    item_text,
-                    is_correct,
+            tests (
+                title,
+                time_limit,
+                test_questions (
+                    question_order,
                     questions (
                         id,
                         question_text,
                         context_text,
                         context_image_url,
-                        points
+                        points,
+                        question_items (
+                            id,
+                            item_text,
+                            is_correct
+                        )
                     )
+                )
+            ),
+            user_answers (
+                is_correct,
+                user_choice,
+                question_items (
+                    id
                 )
             )
         `)
@@ -67,48 +75,55 @@ export default async function ResultsPage({ params }: PageProps) {
         return notFound();
     }
 
-    // Group answers by question, preserving order
-    const questionMap = new Map<string, {
-        questionText: string;
-        contextText: string | null;
-        contextImageUrl: string | null;
-        points: number;
-        statements: {
-            text: string;
-            correctAnswer: boolean;   // the actual correct answer
-            userChoice: boolean;      // what the user picked
-            isCorrect: boolean;       // whether user was right
-        }[];
-    }>();
-
-    result.user_answers.forEach((answer: any) => {
-        const question = answer.question_items?.questions;
-        if (!question) return;
-        if (!questionMap.has(question.id)) {
-            questionMap.set(question.id, {
-                questionText: question.question_text,
-                contextText: question.context_text ?? null,
-                contextImageUrl: question.context_image_url ?? null,
-                points: question.points ?? 0,
-                statements: []
-            });
-        }
-        questionMap.get(question.id)!.statements.push({
-            text: answer.question_items.item_text,
-            correctAnswer: answer.question_items.is_correct,
-            userChoice: answer.user_choice,
-            isCorrect: answer.is_correct,
-        });
+    // Build a lookup of answered statements from user_answers
+    const answerMap = new Map<string, { userChoice: boolean; isCorrect: boolean }>();
+    result.user_answers.forEach((ua: any) => {
+        const itemId = ua.question_items?.id;
+        if (itemId) answerMap.set(itemId, { userChoice: ua.user_choice, isCorrect: ua.is_correct });
     });
 
-    const questions = Array.from(questionMap.values());
+    // Build questions from the full test question list, merging in user answers
+    const testObj = result.tests as any;
+    const questions = (testObj?.test_questions ?? [])
+        .sort((a: any, b: any) => a.question_order - b.question_order)
+        .map((tq: any) => {
+            const q = tq.questions;
+            return {
+                questionText: q.question_text,
+                contextText: q.context_text ?? null,
+                contextImageUrl: q.context_image_url ?? null,
+                points: q.points ?? 0,
+                statements: q.question_items.map((item: any) => {
+                    const answer = answerMap.get(item.id);
+                    if (!answer) {
+                        return {
+                            text: item.item_text,
+                            correctAnswer: item.is_correct,
+                            userChoice: null as boolean | null,
+                            isCorrect: false,
+                            wasSkipped: true,
+                        };
+                    }
+                    return {
+                        text: item.item_text,
+                        correctAnswer: item.is_correct,
+                        userChoice: answer.userChoice as boolean | null,
+                        isCorrect: answer.isCorrect,
+                        wasSkipped: false,
+                    };
+                }),
+            };
+        });
+
     const passed = result.score >= 70;
     const timeTaken = result.time_taken ?? 0;
-    const timeLimit = (result.tests as any)?.time_limit ?? 0;
+    const timeLimit = testObj?.time_limit ?? 0;
     const timeLimitSecs = timeLimit * 60;
     const multiplier = getMultiplier(timeTaken, timeLimitSecs);
-    const earnedPoints = result.correct_count ?? 0;
+    const netPoints = result.correct_count ?? 0;
     const totalPoints = result.total_count ?? 0;
+    // Clamp display to 0 — consistent with the score percentage which is also clamped
+    const displayPoints = Math.max(0, netPoints);
 
     return (
         <div className="max-w-4xl mx-auto px-6 py-14 font-mono space-y-10">
@@ -132,7 +147,7 @@ export default async function ResultsPage({ params }: PageProps) {
             {/* ── SCORE CARD ── */}
             <div className={`p-10 text-center border ${passed ? 'bg-brand/5 border-brand/20' : 'bg-slate-50 border-slate-200'}`}>
                 <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4">
-                    {(result.tests as any)?.title}
+                    {testObj?.title}
                 </p>
                 <div className={`text-[7rem] font-black leading-none mb-3 ${passed ? 'text-brand' : 'text-slate-300'}`}>
                     {result.score}%
@@ -147,7 +162,7 @@ export default async function ResultsPage({ params }: PageProps) {
                         {
                             icon: <Target size={14} />,
                             label: 'Points Earned',
-                            value: `${earnedPoints.toFixed(1)} / ${totalPoints}`,
+                            value: `${displayPoints.toFixed(1)} / ${totalPoints}`,
                         },
                         {
                             icon: <Timer size={14} />,
