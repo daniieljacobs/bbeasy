@@ -11,17 +11,22 @@ function OAuthCompleteInner() {
 
     useEffect(() => {
         const code = searchParams.get('code');
-        if (!code) {
-            router.replace('/auth/login?error=oauth_no_code');
-            return;
-        }
 
         (async () => {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) {
-                router.replace('/auth/login?error=oauth_exchange_failed');
-                return;
+            if (code) {
+                // PKCE flow: only exchange if we don't already have a session
+                // (guards against React Strict Mode double-firing this effect)
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    const { error } = await supabase.auth.exchangeCodeForSession(code);
+                    if (error) {
+                        router.replace('/auth/login?error=oauth_exchange_failed');
+                        return;
+                    }
+                }
             }
+            // Implicit flow: Supabase JS picks up the hash fragment automatically on load.
+            // Either way, session should be set by now.
 
             const { data: authData } = await supabase.auth.getUser();
             const user = authData?.user;
