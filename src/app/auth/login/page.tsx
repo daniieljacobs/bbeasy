@@ -46,17 +46,17 @@ export default function LoginPage() {
 
     const handleGoogleLogin = async () => {
         setGoogleLoading(true);
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/oauth/callback`,
             },
         });
+        console.log('[google-login] data:', data, 'error:', error);
         if (error) {
             alert(error.message);
             setGoogleLoading(false);
         }
-        // On success, Supabase redirects away — no further action needed.
     };
 
     const inputClass = "w-full px-4 py-3 bg-white border border-slate-200 text-sm font-mono outline-none focus:border-brand transition-colors placeholder:text-slate-300";
