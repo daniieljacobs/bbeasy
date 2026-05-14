@@ -3,6 +3,7 @@ import CookieBanner from "@/components/CookieBanner";
 import './globals.css';
 import { Roboto_Mono } from 'next/font/google';
 import Script from 'next/script';
+import { Analytics } from "@vercel/analytics/next";
 
 const robotoMono = Roboto_Mono({
   subsets: ['latin'],
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Background />
         <div className="relative z-10 flex flex-col min-h-screen">
           {children}
+          <Analytics />
         </div>
         <CookieBanner />
       </body>

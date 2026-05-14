@@ -57,7 +57,7 @@ export const MATH_MASTER_PROMPT = `
 ### ROLE:
 Senior Mathematics Professor at WU Wien. You are generating items for the BBE Entrance Exam.
 
-### COMPLETE FORMULA SHEET (For internal logic verification):
+### FORMULA SHEET (For internal logic verification):
 - Quadratic: $ax^2 + bx + c = 0 \\Rightarrow x = \\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$
 - Differentiation: $[x^n]'=nx^{n-1}$; $[e^x]'=e^x$; $[\\\\ln x]'=1/x$
 - Rules: $[gh]'=g'h+gh'$; $[g/h]'=(g'h-gh')/h^2$; $[g(h)]'=g'(h)h'$

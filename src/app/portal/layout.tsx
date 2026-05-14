@@ -140,7 +140,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                 .select('full_name, username, role')
                 .eq('id', user.id)
                 .single();
-            if (data) setProfile(data);
+            if (data) {
+                if (!data.full_name || !data.username) {
+                    router.replace('/auth/complete-profile');
+                    return;
+                }
+                setProfile(data);
+            }
         }
         fetchProfile();
     }, [router]);
